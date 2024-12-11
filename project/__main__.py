@@ -9,6 +9,9 @@ def execute(args: dict) -> bool:
         case "train-dreamer":
             module.train_dreamer()
 
+        case "train-sb3-sac":
+            module.train_sb3_sac()
+
         case _:
             return False
 
