@@ -12,6 +12,7 @@ numpy = "^2.2.0"
 box2d-py = "^2.3.8"
 pygame = "^2.6.1"
 torch = "^2.5.1"
+pyargwriter = "^1.0.0"
 
 
 [build-system]
