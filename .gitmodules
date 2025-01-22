@@ -1,3 +1,3 @@
 [submodule "project/hockey_env"]
 	path = project/hockey_env
-	url = git@github.com:RobinU434/hockey-env.git
+	url = git@github.com:martius-lab/hockey-env.git
