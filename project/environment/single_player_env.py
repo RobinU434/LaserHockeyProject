@@ -5,6 +5,7 @@ from project.algorithms.agent import Agent
 from project.environment.hockey_env.hockey.hockey_env import BasicOpponent, HockeyEnv, Mode
 from gymnasium import Env, spaces
 
+
 class SinglePlayerHockeyEnv(HockeyEnv):
     """Agent to train is always player 1
 
