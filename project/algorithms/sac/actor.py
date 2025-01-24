@@ -8,13 +8,7 @@ from typing import List, Tuple
 
 from project.algorithms.network import FeedForwardNetwork
 
-
-class TrainMode(Enum):
-    STATIC = 0  # no training is permitted
-    FINE_TUNING = 1  # load a model and perform fine tuning
-    FROM_SCRATCH = 2
-
-
+    
 class Actor(nn.Module):
     def __init__(
         self,

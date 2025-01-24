@@ -77,16 +77,16 @@ class SAC(RLAlgorithm):
         state_dim = get_space_dim(self._env.observation_space)
         action_dim = get_space_dim(self._env.action_space)
         self._q1 = QNet(
-            self._lr_q, input_size_state=state_dim, input_size_action=action_dim
+            self._lr_q, state_dim=state_dim, action_dim=action_dim
         )
         self._q2 = QNet(
-            self._lr_q, input_size_state=state_dim, input_size_action=action_dim
+            self._lr_q, state_dim=state_dim, action_dim=action_dim
         )
         self._q1_target = QNet(
-            self._lr_q, input_size_state=state_dim, input_size_action=action_dim
+            self._lr_q, state_dim=state_dim, action_dim=action_dim
         )
         self._q2_target = QNet(
-            self._lr_q, input_size_state=state_dim, input_size_action=action_dim
+            self._lr_q, state_dim=state_dim, action_dim=action_dim
         )
 
         self._q1_target.load_state_dict(self._q1.state_dict().copy())
