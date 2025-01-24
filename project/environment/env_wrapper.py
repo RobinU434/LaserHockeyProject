@@ -13,7 +13,7 @@ class SinglePlayerHockeyEnv(HockeyEnv):
     """
     def __init__(
         self,
-        opponent: object,  # the other agent
+        opponent: Agent,  # the other agent
         keep_mode=True,
         mode=Mode.NORMAL,
         verbose=False,
@@ -44,7 +44,10 @@ class SinglePlayerHockeyEnv(HockeyEnv):
         return super().reset(one_starting=player_starts, mode=mode, seed=seed, options=options)
     
     def step(self, action: np.ndarray):
-        obs_agent_two = self.opponent.self.obs_agent_two()
+        obs_agent_two = self.obs_agent_two()
+        action_agent_two = self.opponent.act(obs_agent_two)
+        env_action = np.concat([action, action_agent_two])
+        return super().step(env_action)
 
 
 
@@ -110,13 +113,13 @@ class EvalHockeEnv:
             - (prefix)mean_length
         """
         results = []
-        for _ in self.n_games:
+        for _ in range(self.n_games):
             results.append(self._collect_rollout(player, env))
         
         # aggregate results
-        results: pd.DataFrame = pd.Dataframe(results)
+        results= pd.DataFrame(results)
         mean_results = results.mean()
-        mean_results: dict = mean_results.to_dict()
+        mean_results = mean_results.to_dict()
         # add prefix
         mean_results = {f"{prefix}{k}": v for k, v in mean_results.items()}
         return mean_results
@@ -178,5 +181,4 @@ class EvalHockeEnv:
             "mean_length": mean_length,
         }
 
-        return results      
-
+        return results
