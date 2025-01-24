@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Tuple
 
 from gymnasium import Env
@@ -11,6 +12,7 @@ from project.algorithms.sac.q_net import QNet
 from tqdm import tqdm
 
 from project.algorithms.utils import get_space_dim
+
 
 class SAC(RLAlgorithm):
     def __init__(
@@ -33,8 +35,18 @@ class SAC(RLAlgorithm):
         eval_env: List[Env] = None,
         eval_check_interval: int = None,
         save_interval: int = None,
+        *args,
+        **kwargs,
     ):
-        super().__init__(env, logger, eval_env, eval_check_interval, save_interval)
+        super().__init__(
+            env,
+            logger,
+            eval_env,
+            eval_check_interval,
+            save_interval,
+            *args,
+            **kwargs,
+        )
 
         self._lr_pi = lr_pi
         self._lr_q = lr_q
@@ -51,7 +63,7 @@ class SAC(RLAlgorithm):
         self._actor_config = actor_config if actor_config is not None else {}
 
         self._memory = ReplayBuffer(buffer_limit=self._buffer_limit)
-        
+
         self._q1: QNet
         self._q2: QNet
         self._q1_target: QNet
@@ -83,7 +95,7 @@ class SAC(RLAlgorithm):
     def _build_policy(self):
         state_dim = get_space_dim(self._env.observation_space)
         action_dim = get_space_dim(self._env.action_space)
-        
+
         self._pi = PolicyNet(
             input_dim=state_dim,
             output_dim=action_dim,
@@ -119,7 +131,7 @@ class SAC(RLAlgorithm):
             q1_val = self._q1_target(s_prime, a_prime)
             q2_val = self._q2_target(s_prime, a_prime)
             q1_q2 = torch.cat([q1_val, q2_val], dim=1)
-            
+
             min_q = torch.min(q1_q2, 1, keepdim=True)[0]
             target = r + self._gamma * done * (min_q + entropy)
         return target
@@ -198,7 +210,10 @@ class SAC(RLAlgorithm):
             if len(self._memory) > self._start_buffer_size:
                 self.train_nets(episode_idx)
 
-            if self._save_interval is not None and (n_episodes + 1) % self._save_interval == 0:
+            if (
+                self._save_interval is not None
+                and (n_episodes + 1) % self._save_interval == 0
+            ):
                 # save model
                 self.save_checkpoint(episode_idx)
 
@@ -207,7 +222,10 @@ class SAC(RLAlgorithm):
         self.save_checkpoint()
         self._env.close()
 
-    def save_checkpoint(self, episode_idx: int):
+    def save_checkpoint(self, episode_idx: int, path: Path | str = None):
+        if path is None:
+            path = self._log_dir / f"model_{episode_idx}.pt"
+
         torch.save(
             {
                 "epoch": episode_idx,
@@ -222,5 +240,23 @@ class SAC(RLAlgorithm):
                 "q2_target_model_state_dict": self._q2_target.state_dict(),
                 "q2_target_optimizer_state_dict": self._q2_target.optimizer.state_dict(),
             },
-            self._fs_logger.path + f"/model_{episode_idx}.pt",
+            path,
         )
+
+    @classmethod
+    def from_checkpoint(cls, checkpoint, config) -> "SAC":
+        sac: SAC = cls(**config.to_container())
+        checkpoint = torch.load(checkpoint)
+
+        sac._pi.load_state_dict(checkpoint["pi_model_state_dict"])
+        sac._pi.optimizer.load_state_dict(checkpoint["pi_optimizer_state_dict"])
+        sac._q1.load_state_dict(checkpoint["q1_model_state_dict"])
+        sac._q1.optimizer.load_state_dict(checkpoint["q1_optimizer_state_dict"])
+        sac._q2.load_state_dict(checkpoint["q2_model_state_dict"])
+        sac._q2.optimizer.load_state_dict(checkpoint["q2_optimizer_state_dict"])
+        sac._q1_target.load_state_dict(checkpoint["q1_target_model_state_dict"])
+        sac._q1_target.optimizer.load_state_dict(checkpoint["q1_target_optimizer_state_dict"])
+        sac._q2_target.load_state_dict(checkpoint["q2_target_model_state_dict"])
+        sac._q2_target.optimizer.load_state_dict(checkpoint["q2_target_optimizer_state_dict"])
+        
+        return sac
