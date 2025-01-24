@@ -224,7 +224,7 @@ class SAC(RLAlgorithm):
 
     def save_checkpoint(self, episode_idx: int, path: Path | str = None):
         if path is None:
-            path = self._log_dir / f"model_{episode_idx}.pt"
+            path = self._log_dir / f"checkpoint_{episode_idx}.pt"
 
         torch.save(
             {
@@ -245,7 +245,7 @@ class SAC(RLAlgorithm):
 
     @classmethod
     def from_checkpoint(cls, checkpoint, config) -> "SAC":
-        sac: SAC = cls(**config.to_container())
+        sac: SAC = cls(env=None, **config.to_container())
         checkpoint = torch.load(checkpoint)
 
         sac._pi.load_state_dict(checkpoint["pi_model_state_dict"])
