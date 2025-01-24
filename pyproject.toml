@@ -18,6 +18,9 @@ tensorboard = "^2.18.0"
 scipy = "^1.15.1"
 tqdm = "^4.67.1"
 
+[tool.poetry.group.dev.dependencies]
+pyargwriter = {git = "git@github.com:RobinU434/PyArgWriter.git"}
+config2class = {git = "git@github.com:RobinU434/Config2Class.git"}
 
 [build-system]
 requires = ["poetry-core"]
