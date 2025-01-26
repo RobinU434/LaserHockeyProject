@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch import Tensor
 from project.algorithms.agent import _Agent
-from project.algorithms.algorithm import RLAlgorithm
+from project.algorithms.algorithm import _RLAlgorithm
 from project.algorithms.sac.buffer import ReplayBuffer
 from project.algorithms.sac.policy_net import PolicyNet
 from project.algorithms.sac.q_net import QNet
@@ -16,7 +16,7 @@ from tqdm import tqdm
 from project.algorithms.utils import PlaceHolderEnv, get_space_dim
 
 
-class SAC(RLAlgorithm):
+class SAC(_RLAlgorithm):
     def __init__(
         self,
         env,
@@ -231,6 +231,12 @@ class SAC(RLAlgorithm):
             ):
                 # save model
                 self.save_checkpoint(episode_idx)
+
+            if (
+                self._eval_check_interval is not None
+                and (n_episodes + 1) % self._eval_check_interval == 0
+            ):
+                self.evaluate(episode_idx)
 
         # store metrics in a csv file
         self.save_metrics()

@@ -9,14 +9,15 @@ import torch
 from project.algorithms.agent import _Agent
 from project.algorithms.logger import _Logger
 from project.algorithms.utils import PlaceHolderEnv
+from project.environment.evaluate_env import _EvalEnv
 
 
-class RLAlgorithm(ABC):
+class _RLAlgorithm(ABC):
     def __init__(
         self,
         env: Env,
         logger: List[_Logger] = [],
-        eval_env: List[Env] = None,
+        eval_env: List[_EvalEnv] | _EvalEnv = None,
         eval_check_interval: int = None,
         save_interval: int = None,
         log_dir: Path = None,
@@ -27,7 +28,7 @@ class RLAlgorithm(ABC):
 
         self._env = env
         self._logger = logger
-        self._eval_env = eval_env
+        self._eval_envs = eval_env if isinstance(eval_env, list) else [eval_env]
         self._eval_check_interval = eval_check_interval
         self._save_interval = save_interval
         self._log_dir = (
@@ -81,19 +82,32 @@ class RLAlgorithm(ABC):
         for logger in self._logger:
             logger.save()
 
+    def evaluate(self, episode_idx: int):
+        """evaluate agent on eval environments
+
+        Args:
+            episode_idx (int): when this evaluate was deployed
+        """
+        # use the argmax agent to evaluate it
+        agent = self.get_agent(deterministic=True)
+        for eval_env in self._eval_envs:
+            metrics = eval_env.eval_player(agent)
+            for k, v in metrics.items():
+                self.log_scalar(k, v, episode_idx)
+
     @abstractmethod
     def save_checkpoint(self, episode_idx: int, path: Path | str = None):
         raise NotImplementedError
 
     @classmethod
-    def from_checkpoint(cls, checkpoint, env: Env = None) -> "RLAlgorithm":
+    def from_checkpoint(cls, checkpoint, env: Env = None) -> "_RLAlgorithm":
         checkpoint_content = torch.load(checkpoint)
         if env is None:
             env = PlaceHolderEnv(
                 checkpoint_content["state_dim"], checkpoint_content["action_dim"]
             )
 
-        sac: RLAlgorithm = cls(env=env, **checkpoint_content["hparams"])
+        sac: _RLAlgorithm = cls(env=env, **checkpoint_content["hparams"])
         sac.load_checkpoint(checkpoint_content)
 
         return sac

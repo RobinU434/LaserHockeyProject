@@ -5,7 +5,7 @@ import re
 from typing import List, Tuple, Type
 from gymnasium import Env
 import numpy as np
-from project.algorithms.algorithm import RLAlgorithm
+from project.algorithms.algorithm import _RLAlgorithm
 from project.environment.evaluate_env import EvalOpponent
 from project.environment.hockey_env.hockey.hockey_env import Mode
 from project.environment.single_player_env import SinglePlayerHockeyEnv
@@ -171,7 +171,7 @@ class SelfPlayTrainer:
     def __init__(
         self,
         env: SinglePlayerHockeyEnv,
-        rl_algorithm: RLAlgorithm,
+        rl_algorithm: _RLAlgorithm,
         checkpoint_schedule: _CheckpointSchedule = None,
         warmup_schedule: WarmupSchedule = None,
     ):

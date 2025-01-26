@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Dict
 from gymnasium import Env
 import pandas as pd
@@ -18,7 +19,24 @@ class EvalOpponent(_Agent):
         return self.opponent.act(state, self.verbose)
 
 
-class EvalHockeEnv:
+class _EvalEnv(ABC):
+    def __init__(self):
+        super().__init__()
+
+    @abstractmethod
+    def eval_player(self, player: _Agent) -> Dict[str, float]:
+        """do player evaluation and return metrics / statistics of this evaluation
+
+        Args:
+            player (_Agent): agent to evaluate
+
+        Returns:
+            Dict[str, float]: dict with names and statistics
+        """
+        raise NotADirectoryError
+    
+
+class EvalHockeEnv(_EvalEnv):
     def __init__(
         self,
         keep_mode=True,
