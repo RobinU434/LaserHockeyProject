@@ -11,7 +11,7 @@ from project.algorithms.sac.policy_net import PolicyNet
 from project.algorithms.sac.q_net import QNet
 from tqdm import tqdm
 
-from project.algorithms.utils import get_space_dim
+from project.algorithms.utils import PlaceHolderEnv, get_space_dim
 
 
 class SAC(RLAlgorithm):
@@ -35,6 +35,7 @@ class SAC(RLAlgorithm):
         eval_env: List[Env] = None,
         eval_check_interval: int = None,
         save_interval: int = None,
+        log_dir: str | Path = Path("results"),
         *args,
         **kwargs,
     ):
@@ -44,9 +45,11 @@ class SAC(RLAlgorithm):
             eval_env,
             eval_check_interval,
             save_interval,
+            log_dir,
             *args,
             **kwargs,
         )
+        self.save_hyperparmeters()
 
         self._lr_pi = lr_pi
         self._lr_q = lr_q
@@ -64,6 +67,9 @@ class SAC(RLAlgorithm):
 
         self._memory = ReplayBuffer(buffer_limit=self._buffer_limit)
 
+        self._state_dim = get_space_dim(self._env.observation_space)
+        self._action_dim = get_space_dim(self._env.action_space)
+
         self._q1: QNet
         self._q2: QNet
         self._q1_target: QNet
@@ -74,31 +80,26 @@ class SAC(RLAlgorithm):
         self._build_policy()
 
     def _build_q_networks(self):
-        state_dim = get_space_dim(self._env.observation_space)
-        action_dim = get_space_dim(self._env.action_space)
         self._q1 = QNet(
-            self._lr_q, state_dim=state_dim, action_dim=action_dim
+            state_dim=self._state_dim, action_dim=self._action_dim, learning_rate=self._lr_q,
         )
         self._q2 = QNet(
-            self._lr_q, state_dim=state_dim, action_dim=action_dim
+            state_dim=self._state_dim, action_dim=self._action_dim, learning_rate=self._lr_q,
         )
         self._q1_target = QNet(
-            self._lr_q, state_dim=state_dim, action_dim=action_dim
+            state_dim=self._state_dim, action_dim=self._action_dim, learning_rate=self._lr_q,
         )
         self._q2_target = QNet(
-            self._lr_q, state_dim=state_dim, action_dim=action_dim
+            state_dim=self._state_dim, action_dim=self._action_dim, learning_rate=self._lr_q,
         )
 
         self._q1_target.load_state_dict(self._q1.state_dict().copy())
         self._q2_target.load_state_dict(self._q2.state_dict().copy())
 
     def _build_policy(self):
-        state_dim = get_space_dim(self._env.observation_space)
-        action_dim = get_space_dim(self._env.action_space)
-
         self._pi = PolicyNet(
-            input_dim=state_dim,
-            output_dim=action_dim,
+            input_dim=self._state_dim,
+            output_dim=self._action_dim,
             learning_rate=self._lr_pi,
             init_alpha=self._init_alpha,
             lr_alpha=self._lr_alpha,
@@ -223,8 +224,11 @@ class SAC(RLAlgorithm):
         self._env.close()
 
     def save_checkpoint(self, episode_idx: int, path: Path | str = None):
+        self._log_dir.mkdir(parents=True, exist_ok=True)
         if path is None:
             path = self._log_dir / f"checkpoint_{episode_idx}.pt"
+        
+
 
         torch.save(
             {
@@ -239,14 +243,18 @@ class SAC(RLAlgorithm):
                 "q1_target_optimizer_state_dict": self._q1_target.optimizer.state_dict(),
                 "q2_target_model_state_dict": self._q2_target.state_dict(),
                 "q2_target_optimizer_state_dict": self._q2_target.optimizer.state_dict(),
+                "hparams": vars(self.hparams),
+                "action_dim": self._action_dim,
+                "state_dim": self._state_dim,
             },
             path,
         )
 
     @classmethod
-    def from_checkpoint(cls, checkpoint, config) -> "SAC":
-        sac: SAC = cls(env=None, **config.to_container())
+    def from_checkpoint(cls, checkpoint) -> "SAC":
         checkpoint = torch.load(checkpoint)
+        env = Plac      eHolderEnv(checkpoint["state_dim"], checkpoint["action_dim"])
+        sac: SAC = cls(env=env, **checkpoint["hparams"])
 
         sac._pi.load_state_dict(checkpoint["pi_model_state_dict"])
         sac._pi.optimizer.load_state_dict(checkpoint["pi_optimizer_state_dict"])
