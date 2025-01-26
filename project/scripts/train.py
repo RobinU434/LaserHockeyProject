@@ -1,10 +1,18 @@
+import hydra
+from omegaconf import DictConfig
+from project.algorithms.logger import CSVLogger, TensorBoardLogger
+from project.algorithms.sac.sac import SAC
+from project.algorithms.trainer import (
+    SelfPlayTrainer,
+    ExponentialSchedule,
+    WarmupSchedule,
+)
 from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
-from stable_baselines3.sac import SAC
-from stable_baselines3.ppo import PPO
-from stable_baselines3.td3 import TD3
 
 from stable_baselines3.common.logger import configure
 from project.utils.configs.train_sac_config import Config as SACConfig
+from project.environment.evaluate_env import EvalHockeEnv
+
 
 def train_dreamer():
     pass
@@ -23,5 +31,35 @@ def train_sb3_sac():
     model.learn(100)
 
 
-def train_sac(config: SACConfig):
-    
+def train_sac(config: DictConfig):
+    config: SACConfig = SACConfig.from_dict_config(config)
+    # build envs (train, eval env)
+    train_env = HockeyEnv(**config.SelfPlay.Env.to_container())
+    eval_env = EvalHockeEnv(**config.SelfPlay.Env.to_container())
+
+    # build algorithm
+    log_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
+    sac = SAC(
+        train_env,
+        logger=logger,
+        eval_env=eval_env,
+        eval_check_interval=config.eval_check_interval,
+        save_interval=config.save_interval,
+        log_dir=log_dir,
+        **config.SAC.to_container()
+    )
+
+    # build trainer
+    checkpoint_schedule = ExponentialSchedule(
+        log_dir, sample_interval=config.SelfPlay.self_play_period
+    )
+    warmup_schedule = WarmupSchedule(**config.SelfPlay.WarmupSchedule.to_container())
+    trainer = SelfPlayTrainer(
+        env=train_env,
+        rl_algorithm=sac,
+        checkpoint_schedule=checkpoint_schedule,
+        warmup_schedule=warmup_schedule,
+    )
+    trainer.train(config.episode_budget)
+    # train algorithm
