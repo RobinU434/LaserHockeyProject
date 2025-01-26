@@ -74,7 +74,7 @@ class RLAlgorithm(ABC):
     @classmethod
     @abstractmethod
     def from_checkpoint(
-        cls, checkpoint: str | Path, config: SACConfig
+        cls, checkpoint: str | Path, env: Env = None
     ) -> "RLAlgorithm":
         raise NotADirectoryError
 

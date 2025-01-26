@@ -261,9 +261,12 @@ class SAC(RLAlgorithm):
         )
 
     @classmethod
-    def from_checkpoint(cls, checkpoint) -> "SAC":
+    def from_checkpoint(cls, checkpoint, env: Env = None) -> "SAC":
         checkpoint = torch.load(checkpoint)
-        env = PlaceHolderEnv(checkpoint["state_dim"], checkpoint["action_dim"])
+        
+        if env is None:
+            env = PlaceHolderEnv(checkpoint["state_dim"], checkpoint["action_dim"])
+        
         sac: SAC = cls(env=env, **checkpoint["hparams"])
 
         sac._pi.load_state_dict(checkpoint["pi_model_state_dict"])
