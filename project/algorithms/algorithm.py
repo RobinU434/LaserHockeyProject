@@ -5,8 +5,9 @@ from pathlib import Path
 from typing import List
 
 from gymnasium import Env
+import torch
 from project.algorithms.logger import _Logger
-from project.utils.configs.train_sac_config import Config as SACConfig
+from project.algorithms.utils import PlaceHolderEnv
 
 
 class RLAlgorithm(ABC):
@@ -31,21 +32,33 @@ class RLAlgorithm(ABC):
         self._log_dir = (
             log_dir if log_dir is not None else Path().cwd().joinpath("results/")
         )
-        self._log_dir = Path(self._log_dir) if not isinstance(self._log_dir, Path) else self._log_dir
+        self._log_dir = (
+            Path(self._log_dir)
+            if not isinstance(self._log_dir, Path)
+            else self._log_dir
+        )
 
         self.hparams = Namespace()
 
     def save_hyperparmeters(self, *args):
         # Get the frame of the calling function (i.e., the __init__ method)
         frame = inspect.currentframe().f_back
-        
+
         # Get the arguments of the calling function
         arg_values = frame.f_locals
-        
+
         # pre filter
-        exclude_args = ["self", "env", "logger", "eval_env", "kwargs", "args", "__class__"]
+        exclude_args = [
+            "self",
+            "env",
+            "logger",
+            "eval_env",
+            "kwargs",
+            "args",
+            "__class__",
+        ]
         hparams = {k: v for k, v in arg_values.items() if k not in exclude_args}
-        
+
         if args:
             # Save only specified arguments
             hparams = {arg: hparams[arg] for arg in args if arg in hparams}
@@ -72,11 +85,21 @@ class RLAlgorithm(ABC):
         raise NotImplementedError
 
     @classmethod
+    def from_checkpoint(cls, checkpoint, env: Env = None) -> "RLAlgorithm":
+        checkpoint_content = torch.load(checkpoint)
+        if env is None:
+            env = PlaceHolderEnv(
+                checkpoint_content["state_dim"], checkpoint_content["action_dim"]
+            )
+
+        sac: RLAlgorithm = cls(env=env, **checkpoint_content["hparams"])
+        sac.load_checkpoint(checkpoint_content)
+
+        return sac
+
     @abstractmethod
-    def from_checkpoint(
-        cls, checkpoint: str | Path, env: Env = None
-    ) -> "RLAlgorithm":
-        raise NotADirectoryError
+    def load_checkpoint(self, checkpoint: str | Path):
+        raise NotImplementedError
 
     @abstractmethod
     def train(self, n_episodes: int):

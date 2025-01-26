@@ -213,7 +213,7 @@ class SAC(RLAlgorithm):
         )
 
     def train(self, n_episodes: int = 1000):
-        if isinstance(self.env, PlaceHolderEnv):
+        if isinstance(self._env, PlaceHolderEnv):
             raise ValueError(
                 "Training with PlaceHolderEnv is not possible. Please update internal environment."
             )
@@ -232,7 +232,7 @@ class SAC(RLAlgorithm):
 
         # store metrics in a csv file
         self.save_metrics()
-        self.save_checkpoint()
+        self.save_checkpoint(n_episodes)
         self._env.close()
 
     def save_checkpoint(self, episode_idx: int, path: Path | str = None):
@@ -260,28 +260,19 @@ class SAC(RLAlgorithm):
             path,
         )
 
-    @classmethod
-    def from_checkpoint(cls, checkpoint, env: Env = None) -> "SAC":
+    def load_checkpoint(self, checkpoint):
         checkpoint = torch.load(checkpoint)
-        
-        if env is None:
-            env = PlaceHolderEnv(checkpoint["state_dim"], checkpoint["action_dim"])
-        
-        sac: SAC = cls(env=env, **checkpoint["hparams"])
-
-        sac._pi.load_state_dict(checkpoint["pi_model_state_dict"])
-        sac._pi.optimizer.load_state_dict(checkpoint["pi_optimizer_state_dict"])
-        sac._q1.load_state_dict(checkpoint["q1_model_state_dict"])
-        sac._q1.optimizer.load_state_dict(checkpoint["q1_optimizer_state_dict"])
-        sac._q2.load_state_dict(checkpoint["q2_model_state_dict"])
-        sac._q2.optimizer.load_state_dict(checkpoint["q2_optimizer_state_dict"])
-        sac._q1_target.load_state_dict(checkpoint["q1_target_model_state_dict"])
-        sac._q1_target.optimizer.load_state_dict(
+        self._pi.load_state_dict(checkpoint["pi_model_state_dict"])
+        self._pi.optimizer.load_state_dict(checkpoint["pi_optimizer_state_dict"])
+        self._q1.load_state_dict(checkpoint["q1_model_state_dict"])
+        self._q1.optimizer.load_state_dict(checkpoint["q1_optimizer_state_dict"])
+        self._q2.load_state_dict(checkpoint["q2_model_state_dict"])
+        self._q2.optimizer.load_state_dict(checkpoint["q2_optimizer_state_dict"])
+        self._q1_target.load_state_dict(checkpoint["q1_target_model_state_dict"])
+        self._q1_target.optimizer.load_state_dict(
             checkpoint["q1_target_optimizer_state_dict"]
         )
-        sac._q2_target.load_state_dict(checkpoint["q2_target_model_state_dict"])
-        sac._q2_target.optimizer.load_state_dict(
+        self._q2_target.load_state_dict(checkpoint["q2_target_model_state_dict"])
+        self._q2_target.optimizer.load_state_dict(
             checkpoint["q2_target_optimizer_state_dict"]
         )
-
-        return sac
