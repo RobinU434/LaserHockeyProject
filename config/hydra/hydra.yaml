@@ -1,0 +1,3 @@
+run:
+  dir: results/${hydra.job.name}/${now:%Y-%m-%d-%H-%M-%S}
+  
