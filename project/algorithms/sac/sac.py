@@ -81,16 +81,24 @@ class SAC(RLAlgorithm):
 
     def _build_q_networks(self):
         self._q1 = QNet(
-            state_dim=self._state_dim, action_dim=self._action_dim, learning_rate=self._lr_q,
+            state_dim=self._state_dim,
+            action_dim=self._action_dim,
+            learning_rate=self._lr_q,
         )
         self._q2 = QNet(
-            state_dim=self._state_dim, action_dim=self._action_dim, learning_rate=self._lr_q,
+            state_dim=self._state_dim,
+            action_dim=self._action_dim,
+            learning_rate=self._lr_q,
         )
         self._q1_target = QNet(
-            state_dim=self._state_dim, action_dim=self._action_dim, learning_rate=self._lr_q,
+            state_dim=self._state_dim,
+            action_dim=self._action_dim,
+            learning_rate=self._lr_q,
         )
         self._q2_target = QNet(
-            state_dim=self._state_dim, action_dim=self._action_dim, learning_rate=self._lr_q,
+            state_dim=self._state_dim,
+            action_dim=self._action_dim,
+            learning_rate=self._lr_q,
         )
 
         self._q1_target.load_state_dict(self._q1.state_dict().copy())
@@ -205,6 +213,10 @@ class SAC(RLAlgorithm):
         )
 
     def train(self, n_episodes: int = 1000):
+        if isinstance(self.env, PlaceHolderEnv):
+            raise ValueError(
+                "Training with PlaceHolderEnv is not possible. Please update internal environment."
+            )
         for episode_idx in tqdm(range(n_episodes), desc="train sac", unit="episodes"):
             self.collect_episode(episode_idx)
 
@@ -227,8 +239,6 @@ class SAC(RLAlgorithm):
         self._log_dir.mkdir(parents=True, exist_ok=True)
         if path is None:
             path = self._log_dir / f"checkpoint_{episode_idx}.pt"
-        
-
 
         torch.save(
             {
@@ -253,7 +263,7 @@ class SAC(RLAlgorithm):
     @classmethod
     def from_checkpoint(cls, checkpoint) -> "SAC":
         checkpoint = torch.load(checkpoint)
-        env = Plac      eHolderEnv(checkpoint["state_dim"], checkpoint["action_dim"])
+        env = PlaceHolderEnv(checkpoint["state_dim"], checkpoint["action_dim"])
         sac: SAC = cls(env=env, **checkpoint["hparams"])
 
         sac._pi.load_state_dict(checkpoint["pi_model_state_dict"])
@@ -263,8 +273,12 @@ class SAC(RLAlgorithm):
         sac._q2.load_state_dict(checkpoint["q2_model_state_dict"])
         sac._q2.optimizer.load_state_dict(checkpoint["q2_optimizer_state_dict"])
         sac._q1_target.load_state_dict(checkpoint["q1_target_model_state_dict"])
-        sac._q1_target.optimizer.load_state_dict(checkpoint["q1_target_optimizer_state_dict"])
+        sac._q1_target.optimizer.load_state_dict(
+            checkpoint["q1_target_optimizer_state_dict"]
+        )
         sac._q2_target.load_state_dict(checkpoint["q2_target_model_state_dict"])
-        sac._q2_target.optimizer.load_state_dict(checkpoint["q2_target_optimizer_state_dict"])
-        
+        sac._q2_target.optimizer.load_state_dict(
+            checkpoint["q2_target_optimizer_state_dict"]
+        )
+
         return sac
