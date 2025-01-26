@@ -7,6 +7,7 @@ import torch.nn.functional as F
 
 from project.algorithms.network import FeedForwardNetwork
 
+
 class QNet(nn.Module):
     def __init__(
         self,
@@ -33,7 +34,7 @@ class QNet(nn.Module):
         )
         self.latent_mlp = FeedForwardNetwork(
             2 * latent_dim,
-            1,      
+            1,
             architecture=[128, 32],
             activation_function="ReLU",
             final_activation="ReLU",
@@ -43,7 +44,7 @@ class QNet(nn.Module):
     def forward(self, s, a):
         h_state = self.state_head.forward(s)
         h_action = self.action_head.forward(a)
-        
+
         latent = torch.cat([h_state, h_action], dim=1)
         q = self.latent_mlp.forward(latent)
         return q

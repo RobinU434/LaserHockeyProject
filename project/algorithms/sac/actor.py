@@ -8,7 +8,7 @@ from typing import List, Tuple
 
 from project.algorithms.network import FeedForwardNetwork
 
-    
+
 class Actor(nn.Module):
     def __init__(
         self,
@@ -38,7 +38,7 @@ class Actor(nn.Module):
             Tuple[torch.Tensor, torch.Tensor]: mu (action_dim, ), std (action_dim, )
         """
         latent = self._core(x)
-        
+
         mu = self.fc_mu(latent)
         std = self.fc_std(latent)
         return mu, std

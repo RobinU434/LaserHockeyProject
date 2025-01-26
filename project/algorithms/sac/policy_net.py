@@ -63,7 +63,7 @@ class PolicyNet(nn.Module):
 
         sample = torch.randn(size=mu.shape)
         log_prob = self.normal_distr.log_prob(sample)
-        
+
         action = sample * std + mu
         # sum log prob
         # independence assumption between individual probabilities
@@ -84,7 +84,6 @@ class PolicyNet(nn.Module):
         real_log_prob = log_prob - torch.sum(
             torch.log(1 - torch.tanh(action).pow(2) + 1e-7), dim=-1
         )  # sum over action dimension
-
 
         return action, real_log_prob
 

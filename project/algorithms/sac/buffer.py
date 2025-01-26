@@ -20,7 +20,9 @@ class ReplayBuffer:
     def put(self, transition):
         self.buffer.append(transition)
 
-    def sample(self, n: int, dtype=torch.float) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+    def sample(
+        self, n: int, dtype=torch.float
+    ) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
         mini_batch = random.sample(self.buffer, n)
 
         # look at first element from minibatch to determine the shape of action, observation, ...
@@ -30,7 +32,7 @@ class ReplayBuffer:
         r_lst = torch.empty((n, 1), dtype=dtype)
         s_prime_lst = torch.empty((n, *s_prime.shape), dtype=dtype)
         done_mask_lst = torch.empty((n, 1), dtype=dtype)
-    
+
         for idx, transition in enumerate(mini_batch):
             s, a, r, s_prime, done = transition
             s_lst[idx] = torch.tensor(s)
