@@ -1,8 +1,12 @@
 from typing import Dict
 import numpy as np
 import pandas as pd
-from project.algorithms.agent import Agent
-from project.environment.hockey_env.hockey.hockey_env import BasicOpponent, HockeyEnv, Mode
+from project.algorithms.agent import _Agent
+from project.environment.hockey_env.hockey.hockey_env import (
+    BasicOpponent,
+    HockeyEnv,
+    Mode,
+)
 from gymnasium import Env, spaces
 
 
@@ -12,10 +16,11 @@ class SinglePlayerHockeyEnv(HockeyEnv):
     Args:
         HockeyEnv (_type_): _description_
     """
+
     def __init__(
         self,
-        opponent: Agent,  # the other agent
-        keep_mode=True,
+        opponent: _Agent,  # the other agent
+        keep_mode=True,     
         mode=Mode.NORMAL,
         verbose=False,
     ):
@@ -23,8 +28,7 @@ class SinglePlayerHockeyEnv(HockeyEnv):
         self.opponent = opponent
         self.action_space = spaces.Box(-1, +1, (self.num_actions,), dtype=np.float32)
 
-
-    def reset(self, opponent_starts: bool = None, mode = None, seed = None, options = None):
+    def reset(self, opponent_starts: bool = None, mode=None, seed=None, options=None):
         """reset environment
         assume: opponent has always the second half of the action (player two)
 
@@ -40,10 +44,12 @@ class SinglePlayerHockeyEnv(HockeyEnv):
         if opponent_starts is not None:
             player_starts = not opponent_starts
         else:
-            player_starts = opponent_starts         
-        
-        return super().reset(one_starting=player_starts, mode=mode, seed=seed, options=options)
-    
+            player_starts = opponent_starts
+
+        return super().reset(
+            one_starting=player_starts, mode=mode, seed=seed, options=options
+        )
+
     def step(self, action: np.ndarray):
         obs_agent_two = self.obs_agent_two()
         action_agent_two = self.opponent.act(obs_agent_two)

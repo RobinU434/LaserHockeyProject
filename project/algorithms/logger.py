@@ -8,12 +8,12 @@ class _Logger(ABC):
     def __init__(self, log_dir: Path):
         super().__init__()
 
-        self._log_dir = log_dir
+        self._log_dir = log_dir if isinstance(log_dir, Path) else Path(log_dir)
 
     @abstractmethod
     def log_scalar(self, name: str, value: float, step: int):
         raise NotImplementedError
-    
+
     @abstractmethod
     def save(self):
         raise NotImplementedError
@@ -23,13 +23,14 @@ class TensorBoardLogger(_Logger):
     def __init__(self, log_dir):
         super().__init__(log_dir)
 
-        self._summary_writer = SummaryWriter(self.log_dir)
+        self._summary_writer = SummaryWriter(self._log_dir)
 
     def log_scalar(self, name, value, step):
         self._summary_writer.add_scalar(name, value, global_step=step)
 
     def save(self):
         pass
+
 
 class CSVLogger(_Logger):
     def __init__(self, log_dir):
@@ -43,6 +44,3 @@ class CSVLogger(_Logger):
     def save(self):
         df = pd.DataFrame(self._data)
         df.to_csv(self._log_dir / "train_logs.csv")
-
-        
-
