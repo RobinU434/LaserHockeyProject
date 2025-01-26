@@ -1,3 +1,4 @@
+from copy import deepcopy
 from pathlib import Path
 from typing import List, Tuple
 
@@ -5,6 +6,7 @@ from gymnasium import Env
 import numpy as np
 import torch
 from torch import Tensor
+from project.algorithms.agent import _Agent
 from project.algorithms.algorithm import RLAlgorithm
 from project.algorithms.sac.buffer import ReplayBuffer
 from project.algorithms.sac.policy_net import PolicyNet
@@ -276,3 +278,16 @@ class SAC(RLAlgorithm):
         self._q2_target.optimizer.load_state_dict(
             checkpoint["q2_target_optimizer_state_dict"]
         )
+
+    def get_agent(self, deterministic: bool = False) -> _Agent:
+        return SACAgent(deepcopy(self._pi), deterministic)
+
+
+class SACAgent(_Agent):
+    def __init__(self, policy: PolicyNet, deterministic: bool = False):
+        super().__init__()
+        self._policy = policy
+        self._mode = deterministic
+
+    def act(self, state):
+        return self._policy.forward(state, mode=self._mode)

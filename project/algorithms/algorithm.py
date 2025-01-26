@@ -6,6 +6,7 @@ from typing import List
 
 from gymnasium import Env
 import torch
+from project.algorithms.agent import _Agent
 from project.algorithms.logger import _Logger
 from project.algorithms.utils import PlaceHolderEnv
 
@@ -103,4 +104,8 @@ class RLAlgorithm(ABC):
 
     @abstractmethod
     def train(self, n_episodes: int):
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_agent(self, deterministic: bool = True) -> _Agent:
         raise NotImplementedError
