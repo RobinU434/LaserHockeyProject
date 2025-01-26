@@ -12,7 +12,8 @@ from project.environment.single_player_env import SinglePlayerHockeyEnv
 from config2class.api.base import StructuredConfig
 from omegaconf import DictConfig, OmegaConf
 
-class CheckpointSchedule(ABC):
+
+class _CheckpointSchedule(ABC):
     def __init__(
         self,
         checkpoint_dir: Path,
@@ -25,7 +26,9 @@ class CheckpointSchedule(ABC):
             checkpoint_dir (Path): directory with checkpoints. Assert checkpoint naming scheme: "checkpoint_{epoch_idx}.pt"
         """
         super().__init__()
-        self.checkpoint_dir = checkpoint_dir
+        self.checkpoint_dir = (
+            Path(checkpoint_dir) if isinstance(checkpoint_dir, str) else checkpoint_dir
+        )
         self.sample_interval = sample_interval
         self.name_pattern = name_pattern
         self._current_episode = 0
@@ -52,7 +55,6 @@ class CheckpointSchedule(ABC):
                 msg = f"Not able to extract episode from {file_name} with patter: {self.name_pattern}"
                 logging.error(msg)
                 indices.append(None)
-
         # sort indices
         sort_idx = np.argsort(indices)[::-1]
         indices = np.array(indices)[sort_idx].tolist()
@@ -63,7 +65,6 @@ class CheckpointSchedule(ABC):
     def sample_checkpoint(self) -> Path:
         raise NotImplementedError
 
-    @abstractmethod
     def step(self):
         """increase step counter"""
         self._current_episode += 1
@@ -82,7 +83,7 @@ class CheckpointSchedule(ABC):
         return None
 
 
-class ExponentialSchedule(CheckpointSchedule):
+class ExponentialSchedule(_CheckpointSchedule):
     """samples checkpoint name based on a exponential distribution. Older checkpoints will be sampled less."""
 
     def __init__(
@@ -97,7 +98,7 @@ class ExponentialSchedule(CheckpointSchedule):
 
     def sample_checkpoint(self):
         indices, checkpoints = self._get_episodes()
-        x = np.array(indices)
+        x = np.array(indices, dtype=float)
         x -= x.min()
         x /= x.max()
         n_checkpoints = len(x)
@@ -129,18 +130,17 @@ class WarmupSchedule:
         self.n_episodes_weak = n_episodes_weak
         self.n_episodes_strong = n_episodes_strong
 
-        weak_opponent = EvalOpponent(
-            weak=True, keep_mode=keep_mode, verbose=verbose
-        )
-        strong_opponent = EvalOpponent(
-            weak=False, keep_mode=keep_mode, verbose=verbose
-        )
+        weak_opponent = EvalOpponent(weak=True, keep_mode=keep_mode, verbose=verbose)
         strong_opponent = EvalOpponent(weak=False, keep_mode=keep_mode, verbose=verbose)
-        self.strong_env = SinglePlayerHockeyEnv(opponent=strong_opponent, keep_mode=keep_mode, mode=mode, verbose=verbose)
+        strong_opponent = EvalOpponent(weak=False, keep_mode=keep_mode, verbose=verbose)
+        self.strong_env = SinglePlayerHockeyEnv(
+            opponent=strong_opponent, keep_mode=keep_mode, mode=mode, verbose=verbose
+        )
 
         weak_opponent = EvalOpponent(weak=True, keep_mode=keep_mode, verbose=verbose)
-        self.weak_env = SinglePlayerHockeyEnv(opponent=weak_opponent, keep_mode=keep_mode, mode=mode, verbose=verbose)
-
+        self.weak_env = SinglePlayerHockeyEnv(
+            opponent=weak_opponent, keep_mode=keep_mode, mode=mode, verbose=verbose
+        )
 
     def step(self):
         self.episode_counter += 1
@@ -166,32 +166,20 @@ class WarmupSchedule:
     def total_warmup_episodes(self) -> int:
         return self.n_episodes_strong + self.n_episodes_weak
 
+
 class SelfPlayTrainer:
     def __init__(
         self,
         env: SinglePlayerHockeyEnv,
-        rl_algorithm: Type[RLAlgorithm],
-        rl_algorithm_config: StructuredConfig = None,
-        checkpoint_schedule: CheckpointSchedule = None,
+        rl_algorithm: RLAlgorithm,
+        checkpoint_schedule: _CheckpointSchedule = None,
         warmup_schedule: WarmupSchedule = None,
     ):
         self.env = env
-        self.rl_algorithm_config = rl_algorithm_config
-        self.rl_algorithm = None
+        self.rl_algorithm = rl_algorithm
         self.checkpoint_schedule = checkpoint_schedule
         self.warmup_schedule = warmup_schedule
 
-    def _build_rl_algorithm(self, cls: Type[RLAlgorithm], config: StructuredConfig) -> RLAlgorithm:
-        if isinstance(config, StructuredConfig):
-            config = config.to_container()
-        elif isinstance(config, dict):
-            pass
-        elif isinstance(config, DictConfig):
-            config = OmegaConf.to_container(config)
-        elif config is None:
-            config = {}
-        # TODO: develop this further        
-        
     def do_warmup(self, total_episode_budge: int):
         if self.warmup_schedule is None:
             return
@@ -206,16 +194,30 @@ class SelfPlayTrainer:
         self.rl_algorithm.update_env(self.warmup_schedule.strong_env)
         self.rl_algorithm.train(self.warmup_schedule.n_episodes_strong)
 
-        
     def train(self, n_episodes: int):
-        remaining_episode_budged = n_episodes - self.warmup_schedule.total_warmup_episodes()
+        self.do_warmup(n_episodes)
+        self.rl_algorithm.save_checkpoint(self.warmup_schedule.total_warmup_episodes())
+        remaining_episode_budged = (
+            n_episodes - self.warmup_schedule.total_warmup_episodes()
+        )
 
-        budgets = [self.checkpoint_schedule.sample_interval] *  remaining_episode_budged // self.checkpoint_schedule.sample_interval
-        budgets.append(remaining_episode_budged - np.sum(budgets))
+        budgets = [self.checkpoint_schedule.sample_interval] * (
+            remaining_episode_budged // self.checkpoint_schedule.sample_interval
+        )
+        rest_budged = remaining_episode_budged - np.sum(budgets, dtype=int)
+        if rest_budged > 0:
+            budgets.append(rest_budged)
 
         for self_play_budget in budgets:
             # load past checkpoint as current opponent
             checkpoint = self.checkpoint_schedule.sample_checkpoint()
-            opponent = 
+            self_play_agent = (
+                type(self.rl_algorithm)
+                .from_checkpoint(checkpoint)
+                .get_agent(deterministic=False)
+            )   
+            # update env
+            self.env.opponent = self_play_agent
+            self.rl_algorithm.update_env(self.env)
             # start training
             self.rl_algorithm.train(self_play_budget)
