@@ -1,16 +1,31 @@
 from argparse import ArgumentParser
+from pathlib import Path
+from pyargwriter import api
+from project.utils.parser import setup_entrypoint_parser
 from project.entrypoint import Entrypoint
 from project.utils.parser import setup_parser
 
 
 def execute(args: dict) -> bool:
     module = Entrypoint()
+    _, command_parser = setup_entrypoint_parser(ArgumentParser())
     match args["command"]:
         case "train-dreamer":
             module.train_dreamer()
 
         case "train-sb3-sac":
             module.train_sb3_sac()
+
+        case "train-sac":
+            api.hydra_plugin.hydra_wrapper(
+                module.train_sac,
+                args,
+                command_parser["train_sac"],
+                config_var_name="config",
+                version_base=None,
+                config_path=str(Path.cwd().joinpath("config")),
+                config_name="train_sac.yaml",
+            )
 
         case _:
             return False
