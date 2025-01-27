@@ -1,18 +1,15 @@
 import hydra
 from omegaconf import DictConfig
+from stable_baselines3.common.logger import configure
+
 from project.algorithms.logger import CSVLogger, TensorBoardLogger
 from project.algorithms.sac.sac import SAC
-from project.algorithms.trainer import (
-    SelfPlayTrainer,
-    ExponentialSampler,
-    WarmupSchedule,
-)
+from project.algorithms.trainer import (ExponentialSampler, SelfPlayTrainer,
+                                        WarmupSchedule)
+from project.environment.evaluate_env import EvalHockeEnv
 from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
-
-from stable_baselines3.common.logger import configure
 from project.environment.single_player_env import SinglePlayerHockeyEnv
 from project.utils.configs.train_sac_config import Config as SACConfig
-from project.environment.evaluate_env import EvalHockeEnv
 
 
 def train_dreamer():

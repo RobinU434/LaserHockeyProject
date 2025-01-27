@@ -1,9 +1,6 @@
 import torch
-
-from torch import nn
-from torch import optim
-
 import torch.nn.functional as F
+from torch import nn, optim
 
 from project.algorithms.network import FeedForwardNetwork
 

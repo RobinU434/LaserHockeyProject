@@ -2,17 +2,17 @@ from copy import deepcopy
 from pathlib import Path
 from typing import List, Tuple
 
-from gymnasium import Env
 import numpy as np
 import torch
+from gymnasium import Env
 from torch import Tensor
+from tqdm import tqdm
+
 from project.algorithms.agent import _Agent
 from project.algorithms.algorithm import _RLAlgorithm
 from project.algorithms.sac.buffer import ReplayBuffer
 from project.algorithms.sac.policy_net import PolicyNet
 from project.algorithms.sac.q_net import QNet
-from tqdm import tqdm
-
 from project.algorithms.utils import PlaceHolderEnv, get_space_dim
 
 

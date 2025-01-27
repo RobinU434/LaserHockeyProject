@@ -1,16 +1,15 @@
-from abc import ABC, abstractmethod
 import logging
-from pathlib import Path
 import re
-from typing import List, Tuple, Type
-from gymnasium import Env
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import List, Tuple
+
 import numpy as np
+
 from project.algorithms.algorithm import _RLAlgorithm
 from project.environment.evaluate_env import EvalOpponent
 from project.environment.hockey_env.hockey.hockey_env import Mode
 from project.environment.single_player_env import SinglePlayerHockeyEnv
-from config2class.api.base import StructuredConfig
-from omegaconf import DictConfig, OmegaConf
 
 
 class _CheckpointSampler(ABC):

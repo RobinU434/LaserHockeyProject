@@ -1,7 +1,7 @@
 from typing import List
-from torch import nn
-from torch.nn import Module, Sequential, Linear
-from torch import Tensor
+
+from torch import Tensor, nn
+from torch.nn import Linear, Module, Sequential
 
 
 class FeedForwardNetwork(Module):

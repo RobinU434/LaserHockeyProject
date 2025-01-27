@@ -1,4 +1,5 @@
 from gymnasium import Space
+
 from project.algorithms.agent import _Agent
 from project.environment.hockey_env.hockey.hockey_env import BasicOpponent
 

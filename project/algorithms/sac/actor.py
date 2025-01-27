@@ -1,10 +1,8 @@
+from typing import List, Tuple
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
-from enum import Enum
-
-from typing import List, Tuple
 
 from project.algorithms.network import FeedForwardNetwork
 

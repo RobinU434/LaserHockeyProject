@@ -1,11 +1,9 @@
 import numpy as np
-from project.algorithms.agent import _Agent
-from project.environment.hockey_env.hockey.hockey_env import (
-    HockeyEnv,
-    Mode,
-)
-from project.environment.opponent import RandomOpponent
 from gymnasium import spaces
+
+from project.algorithms.agent import _Agent
+from project.environment.hockey_env.hockey.hockey_env import HockeyEnv, Mode
+from project.environment.opponent import RandomOpponent
 
 
 class SinglePlayerHockeyEnv(HockeyEnv):

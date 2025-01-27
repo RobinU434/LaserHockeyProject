@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from torch.utils.tensorboard.writer import SummaryWriter
+
 import pandas as pd
+from torch.utils.tensorboard.writer import SummaryWriter
 
 
 class _Logger(ABC):

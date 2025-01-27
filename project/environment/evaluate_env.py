@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import Dict
-from gymnasium import Env, Space
+
 import pandas as pd
+from gymnasium import Env
+
 from project.algorithms.agent import _Agent
-from project.environment.hockey_env.hockey.hockey_env import BasicOpponent, Mode
+from project.environment.hockey_env.hockey.hockey_env import Mode
 from project.environment.opponent import EvalOpponent
 from project.environment.single_player_env import SinglePlayerHockeyEnv
+
 
 class _EvalEnv(ABC):
     def __init__(self):

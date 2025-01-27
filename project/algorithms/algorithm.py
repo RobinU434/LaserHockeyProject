@@ -1,11 +1,12 @@
+import inspect
 from abc import ABC, abstractmethod
 from argparse import Namespace
-import inspect
 from pathlib import Path
 from typing import List
 
-from gymnasium import Env
 import torch
+from gymnasium import Env
+
 from project.algorithms.agent import _Agent
 from project.algorithms.logger import _Logger
 from project.algorithms.utils import PlaceHolderEnv

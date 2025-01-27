@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
-from typing import Tuple, Dict, List
+from typing import Dict, Tuple
+
 from pyargwriter.api.hydra_plugin import add_hydra_parser
 
 

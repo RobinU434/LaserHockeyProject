@@ -1,15 +1,9 @@
-import math
 from typing import List
-import torch
 
-from torch import Tensor, nn
-from torch import optim
-
-import torch.nn.functional as F
 import numpy as np
-
-from torch.distributions import Normal
-from torch.distributions import constraints
+import torch
+from torch import nn, optim
+from torch.distributions import Normal, constraints
 
 from project.algorithms.sac.actor import Actor
 
