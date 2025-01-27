@@ -1,13 +1,11 @@
-from typing import Dict
 import numpy as np
-import pandas as pd
 from project.algorithms.agent import _Agent
 from project.environment.hockey_env.hockey.hockey_env import (
-    BasicOpponent,
     HockeyEnv,
     Mode,
 )
-from gymnasium import Env, spaces
+from project.environment.opponent import RandomOpponent
+from gymnasium import spaces
 
 
 class SinglePlayerHockeyEnv(HockeyEnv):
@@ -19,14 +17,16 @@ class SinglePlayerHockeyEnv(HockeyEnv):
 
     def __init__(
         self,
-        opponent: _Agent,  # the other agent
-        keep_mode=True,     
+        opponent: _Agent = None,  # the other agent
+        keep_mode=True,
         mode=Mode.NORMAL,
         verbose=False,
     ):
         super().__init__(keep_mode, mode, verbose)
-        self.opponent = opponent
         self.action_space = spaces.Box(-1, +1, (self.num_actions,), dtype=np.float32)
+        self.opponent = (
+            opponent if opponent is not None else RandomOpponent(self.action_space)
+        )
 
     def reset(self, opponent_starts: bool = None, mode=None, seed=None, options=None):
         """reset environment

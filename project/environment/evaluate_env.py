@@ -1,23 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Dict
-from gymnasium import Env
+from gymnasium import Env, Space
 import pandas as pd
 from project.algorithms.agent import _Agent
 from project.environment.hockey_env.hockey.hockey_env import BasicOpponent, Mode
+from project.environment.opponent import EvalOpponent
 from project.environment.single_player_env import SinglePlayerHockeyEnv
-
-
-class EvalOpponent(_Agent):
-    def __init__(
-        self, weak: bool = True, keep_mode: bool = True, verbose: bool = False
-    ):
-        super().__init__()
-        self.verbose = verbose
-        self.opponent = BasicOpponent(weak, keep_mode)
-
-    def act(self, state):
-        return self.opponent.act(state, self.verbose)
-
 
 class _EvalEnv(ABC):
     def __init__(self):
@@ -34,7 +22,7 @@ class _EvalEnv(ABC):
             Dict[str, float]: dict with names and statistics
         """
         raise NotADirectoryError
-    
+
 
 class EvalHockeEnv(_EvalEnv):
     def __init__(
