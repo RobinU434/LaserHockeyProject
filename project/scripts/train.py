@@ -10,6 +10,8 @@ from project.environment.evaluate_env import EvalHockeEnv
 from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
 from project.environment.single_player_env import SinglePlayerHockeyEnv
 from project.utils.configs.train_sac_config import Config as SACConfig
+from project.environment.hockey_env.hdf5_replay_buffer import HDF5ReplayBuffer
+
 
 
 def train_dreamer():
@@ -34,6 +36,9 @@ def train_sac(config: DictConfig, force: bool = False):
     # build envs (train, eval env)
     train_env = SinglePlayerHockeyEnv(**config.SelfPlay.Env.to_container())
     eval_env = EvalHockeEnv(**config.SelfPlay.Env.to_container())
+
+    # ititialize HDF5ReplayBuffer (save interactions)
+    hdf5_replay_buffer = HDF5ReplayBuffer("interactions.h5", max_size=100000)
 
     # build algorithm
     log_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
@@ -67,6 +72,25 @@ def train_sac(config: DictConfig, force: bool = False):
         if not (question is None or question.lower().strip() in ["", "y", "yes"]):
             print("Abort training")
             return
+
+    # train loop, saves interactions in hdf5
+    for episode in range(config.episode_budget):
+        state = train_env.reset()
+        done = False
+        while not done:
+            action = sac.select_action(state)  
+            next_state, reward, done, _ = train_env.step(action)
+
+            # save interactions
+            hdf5_replay_buffer.add_interaction(state, action, reward, next_state, done)
+
+            # prepare next state for interactions
+            state = next_state
+
+        # if there is a predefined checkpoint for saving, save the buffer
+        if (episode + 1) % config.save_interval == 0:
+            print(f"Saving HDF5 buffer after {episode + 1} episodes.")
+            hdf5_replay_buffer.close()
 
     trainer.train(config.episode_budget)
     # train algorithm
