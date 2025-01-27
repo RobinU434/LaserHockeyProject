@@ -1,8 +1,6 @@
 from omegaconf import DictConfig
 from pyargwriter.decorator import add_hydra
 
-from project.scripts.train import train_sac
-
 
 class Entrypoint:
     """Entrypoint to experimentation landscape"""
@@ -22,5 +20,6 @@ class Entrypoint:
         train_sb3_sac()
 
     @add_hydra("config", None, config_path="config", config_name="train_sac.yaml")
-    def train_sac(self, config: DictConfig):
-        train_sac(config)
+    def train_sac(self, config: DictConfig, force: bool = False):
+        from project.scripts.train import train_sac
+        train_sac(config, force)

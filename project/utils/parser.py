@@ -4,6 +4,13 @@ from pyargwriter.api.hydra_plugin import add_hydra_parser
 
 
 def add_train_sac_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument(
+        "--force",
+        help="--no-documentation-exists--",
+        dest="force",
+        action="store_true",
+        required=False,
+    )
     return parser
 
 

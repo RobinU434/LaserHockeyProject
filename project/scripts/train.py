@@ -10,6 +10,7 @@ from project.algorithms.trainer import (
 from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
 
 from stable_baselines3.common.logger import configure
+from project.environment.single_player_env import SinglePlayerHockeyEnv
 from project.utils.configs.train_sac_config import Config as SACConfig
 from project.environment.evaluate_env import EvalHockeEnv
 
@@ -31,10 +32,10 @@ def train_sb3_sac():
     model.learn(100)
 
 
-def train_sac(config: DictConfig):
+def train_sac(config: DictConfig, force: bool = False):
     config: SACConfig = SACConfig.from_dict_config(config)
     # build envs (train, eval env)
-    train_env = HockeyEnv(**config.SelfPlay.Env.to_container())
+    train_env = SinglePlayerHockeyEnv(**config.SelfPlay.Env.to_container())
     eval_env = EvalHockeEnv(**config.SelfPlay.Env.to_container())
 
     # build algorithm
@@ -61,5 +62,14 @@ def train_sac(config: DictConfig):
         checkpoint_schedule=checkpoint_schedule,
         warmup_schedule=warmup_schedule,
     )
+
+    print(sac)
+
+    if not force:
+        question = input("Would you like to start to train? [Y, n]")
+        if not (question is None or question.lower().strip() in ["", "y", "yes"]):
+            print("Abort training")
+            return
+
     trainer.train(config.episode_budget)
     # train algorithm
