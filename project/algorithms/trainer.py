@@ -13,7 +13,7 @@ from config2class.api.base import StructuredConfig
 from omegaconf import DictConfig, OmegaConf
 
 
-class _CheckpointSchedule(ABC):
+class _CheckpointSampler(ABC):
     def __init__(
         self,
         checkpoint_dir: Path,
@@ -83,7 +83,7 @@ class _CheckpointSchedule(ABC):
         return None
 
 
-class ExponentialSchedule(_CheckpointSchedule):
+class ExponentialSampler(_CheckpointSampler):
     """samples checkpoint name based on a exponential distribution. Older checkpoints will be sampled less."""
 
     def __init__(
@@ -172,7 +172,7 @@ class SelfPlayTrainer:
         self,
         env: SinglePlayerHockeyEnv,
         rl_algorithm: _RLAlgorithm,
-        checkpoint_schedule: _CheckpointSchedule = None,
+        checkpoint_schedule: _CheckpointSampler = None,
         warmup_schedule: WarmupSchedule = None,
     ):
         self.env = env

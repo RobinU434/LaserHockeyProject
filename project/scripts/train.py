@@ -4,7 +4,7 @@ from project.algorithms.logger import CSVLogger, TensorBoardLogger
 from project.algorithms.sac.sac import SAC
 from project.algorithms.trainer import (
     SelfPlayTrainer,
-    ExponentialSchedule,
+    ExponentialSampler,
     WarmupSchedule,
 )
 from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
@@ -52,7 +52,7 @@ def train_sac(config: DictConfig, force: bool = False):
     )
 
     # build trainer
-    checkpoint_schedule = ExponentialSchedule(
+    checkpoint_schedule = ExponentialSampler(
         log_dir, sample_interval=config.SelfPlay.self_play_period
     )
     warmup_schedule = WarmupSchedule(**config.SelfPlay.WarmupSchedule.to_container())
