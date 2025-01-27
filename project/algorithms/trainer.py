@@ -215,7 +215,7 @@ class SelfPlayTrainer:
                 type(self.rl_algorithm)
                 .from_checkpoint(checkpoint)
                 .get_agent(deterministic=False)
-            )   
+            )
             # update env
             self.env.opponent = self_play_agent
             self.rl_algorithm.update_env(self.env)
