@@ -202,16 +202,16 @@ class SAC(_RLAlgorithm):
             self._q2.soft_update(self._q2_target, self._tau)
 
         self.log_scalar(
-            "sac/entropy", torch.tensor(logging_entropy).mean(), episode_idx
+            "sac/entropy", torch.tensor(logging_entropy).mean().item(), episode_idx
         )
         self.log_scalar(
-            "sac/actor_loss", torch.tensor(actor_losses).mean(), episode_idx
+            "sac/actor_loss", torch.tensor(actor_losses).mean().item(), episode_idx
         )
         self.log_scalar(
-            "sac/critic_loss", torch.tensor(critic_losses).mean(), episode_idx
+            "sac/critic_loss", torch.tensor(critic_losses).mean().item(), episode_idx
         )
         self.log_scalar(
-            "sac/alpha_loss", torch.tensor(alpha_losses).mean(), episode_idx
+            "sac/alpha_loss", torch.tensor(alpha_losses).mean().item(), episode_idx
         )
 
     def train(self, n_episodes: int = 1000):
@@ -269,7 +269,7 @@ class SAC(_RLAlgorithm):
         )
 
     def load_checkpoint(self, checkpoint):
-        checkpoint = torch.load(checkpoint)
+        checkpoint = torch.load(checkpoint, weights_only=True)
         self._pi.load_state_dict(checkpoint["pi_model_state_dict"])
         self._pi.optimizer.load_state_dict(checkpoint["pi_optimizer_state_dict"])
         self._q1.load_state_dict(checkpoint["q1_model_state_dict"])
@@ -288,6 +288,9 @@ class SAC(_RLAlgorithm):
     def get_agent(self, deterministic: bool = False) -> _Agent:
         return SACAgent(deepcopy(self._pi), deterministic)
 
+    def __repr__(self):
+        s = f"================= Policy =================\n{str(self._pi)}\n=============== Q-Function ===============\n{str(self._q1)}"
+        return s
 
 class SACAgent(_Agent):
     def __init__(self, policy: PolicyNet, deterministic: bool = False):
@@ -296,4 +299,6 @@ class SACAgent(_Agent):
         self._mode = deterministic
 
     def act(self, state):
-        return self._policy.forward(state, mode=self._mode)
+        state = torch.from_numpy(state).float()
+        action, _ = self._policy.forward(state[None], mode=self._mode)
+        return action.detach().numpy()[0]
