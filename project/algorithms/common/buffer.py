@@ -163,7 +163,7 @@ class RidgidReplayBuffer(_ReplayBuffer):
         self._next_observations[-shift_idx:] = next_observation
         self._rewards[:-shift_idx] = self._rewards[shift_idx:]
         self._rewards[-shift_idx:] = reward
-self._dones[:-shift_idx] = self._dones[shift_idx:]                  
+        self._dones[:-shift_idx] = self._dones[shift_idx:]                  
         self._dones[-shift_idx:] = reward
 
         if self.count < self._buffer_limit:
