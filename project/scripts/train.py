@@ -1,8 +1,9 @@
+import gymnasium
 import hydra
 from omegaconf import DictConfig
 from stable_baselines3.common.logger import configure
 
-from project.algorithms.logger import CSVLogger, TensorBoardLogger
+from project.algorithms.common.logger import CSVLogger, TensorBoardLogger
 from project.algorithms.sac.sac import SAC
 from project.algorithms.trainer import (ExponentialSampler, SelfPlayTrainer,
                                         WarmupSchedule)

@@ -6,7 +6,7 @@ from typing import List, Tuple
 
 import numpy as np
 
-from project.algorithms.algorithm import _RLAlgorithm
+from project.algorithms.common.algorithm import _RLAlgorithm
 from project.environment.evaluate_env import EvalOpponent
 from project.environment.hockey_env.hockey.hockey_env import Mode
 from project.environment.single_player_env import SinglePlayerHockeyEnv

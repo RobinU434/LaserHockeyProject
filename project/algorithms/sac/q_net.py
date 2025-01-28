@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn, optim
 
-from project.algorithms.network import FeedForwardNetwork
+from project.algorithms.common.network import FeedForwardNetwork
 
 
 class QNet(nn.Module):

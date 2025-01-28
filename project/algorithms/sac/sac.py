@@ -8,8 +8,8 @@ from gymnasium import Env
 from torch import Tensor
 from tqdm import tqdm
 
-from project.algorithms.agent import _Agent
-from project.algorithms.algorithm import _RLAlgorithm
+from project.algorithms.common.agent import _Agent
+from project.algorithms.common.algorithm import _RLAlgorithm
 from project.algorithms.sac.buffer import ReplayBuffer
 from project.algorithms.sac.policy_net import PolicyNet
 from project.algorithms.sac.q_net import QNet

@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from project.algorithms.network import FeedForwardNetwork
+from project.algorithms.common.network import FeedForwardNetwork
 
 
 class Actor(nn.Module):

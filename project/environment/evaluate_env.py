@@ -4,7 +4,7 @@ from typing import Dict
 import pandas as pd
 from gymnasium import Env
 
-from project.algorithms.agent import _Agent
+from project.algorithms.common.agent import _Agent
 from project.environment.hockey_env.hockey.hockey_env import Mode
 from project.environment.opponent import EvalOpponent
 from project.environment.single_player_env import SinglePlayerHockeyEnv
