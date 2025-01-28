@@ -47,7 +47,7 @@ class QNet(nn.Module):
         return q
 
     def train_net(self, target, mini_batch):
-        s, a, r, _, _ = mini_batch
+        s, a, _, _, _ = mini_batch
         q_val = self.forward(s, a)
         loss = F.smooth_l1_loss(q_val, target).mean()
         self.optimizer.zero_grad()

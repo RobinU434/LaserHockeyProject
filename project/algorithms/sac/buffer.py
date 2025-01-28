@@ -24,6 +24,7 @@ class ReplayBuffer:
     ) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
         mini_batch = random.sample(self.buffer, n)
 
+
         # look at first element from minibatch to determine the shape of action, observation, ...
         s, a, r, s_prime, done = mini_batch[0]
         s_lst = torch.empty((n, *s.shape), dtype=dtype)

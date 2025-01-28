@@ -7,8 +7,8 @@ from typing import List
 import torch
 from gymnasium import Env
 
-from project.algorithms.agent import _Agent
-from project.algorithms.logger import _Logger
+from project.algorithms.common.agent import _Agent
+from project.algorithms.common.logger import _Logger
 from project.algorithms.utils import PlaceHolderEnv
 from project.environment.evaluate_env import _EvalEnv
 

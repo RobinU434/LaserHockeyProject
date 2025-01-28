@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from project.algorithms.common.agent import _Agent
 from project.algorithms.common.algorithm import _RLAlgorithm
-from project.algorithms.sac.buffer import ReplayBuffer
+from project.algorithms.common.buffer import _ReplayBuffer, RigidReplayBuffer
 from project.algorithms.sac.policy_net import PolicyNet
 from project.algorithms.sac.q_net import QNet
 from project.algorithms.utils import PlaceHolderEnv, get_space_dim
@@ -67,10 +67,11 @@ class SAC(_RLAlgorithm):
         self._action_magnitude = action_magnitude
         self._actor_config = actor_config if actor_config is not None else {}
 
-        self._memory = ReplayBuffer(buffer_limit=self._buffer_limit)
-
         self._state_dim = get_space_dim(self._env.observation_space)
         self._action_dim = get_space_dim(self._env.action_space)
+
+        self._memory: _ReplayBuffer
+        self._build_buffer()
 
         self._q1: QNet
         self._q2: QNet
@@ -117,6 +118,11 @@ class SAC(_RLAlgorithm):
             **self._actor_config,
         )
 
+    def _build_buffer(self):
+        self._memory = RigidReplayBuffer(
+            self._buffer_limit, self._action_dim, self._state_dim, 1
+        )
+
     def calc_target(
         self, mini_batch: Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
     ) -> Tensor:
@@ -133,7 +139,7 @@ class SAC(_RLAlgorithm):
         Returns:
             Tensor: td target (batch_size,)
         """
-        _, _, r, s_prime, done = mini_batch
+        _, _, s_prime, r, done = mini_batch
         with torch.no_grad():
             a_prime, log_prob = self._pi.forward(s_prime)
             entropy = -self._pi.log_alpha.exp() * log_prob
@@ -164,7 +170,13 @@ class SAC(_RLAlgorithm):
             a = a[0].detach()
             s_prime, r, done, truncated, _ = self._env.step(a.numpy())
 
-            self._memory.put((s, a, r, s_prime, done))
+            self._memory.put(
+                torch.from_numpy(s),
+                a,
+                torch.from_numpy(s_prime),
+                torch.tensor([r]),
+                torch.tensor([done]),
+            )
             s = s_prime
 
             score += r
@@ -291,6 +303,7 @@ class SAC(_RLAlgorithm):
     def __repr__(self):
         s = f"================= Policy =================\n{str(self._pi)}\n=============== Q-Function ===============\n{str(self._q1)}"
         return s
+
 
 class SACAgent(_Agent):
     def __init__(self, policy: PolicyNet, deterministic: bool = False):
