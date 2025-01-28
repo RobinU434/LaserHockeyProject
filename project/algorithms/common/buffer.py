@@ -1,10 +1,8 @@
-from abc import ABC
-from torch.utils.data import Dataset
+from typing import Iterable, List, Tuple
+
 import torch
 from torch import Tensor
-
-import gymnasium
-from typing import Iterable, List, Tuple
+from torch.utils.data import Dataset
 
 
 class _ReplayBuffer(Dataset):
@@ -128,23 +126,7 @@ class RidgidReplayBuffer(_ReplayBuffer):
         self._rewards = torch.empty((self._buffer_limit, reward_shape))
         self._dones = torch.empty((self._buffer_limit,))
 
-    def add(
-        self,
-        observation: Tensor,
-        action: Tensor,
-        next_observation: Tensor,
-        reward: Tensor,
-        done: Tensor,
-    ):
-        """appends or extends buffer elements
-
-        Args:
-            observation (Tensor): (observation_shape,) | (n_samples, observation_shape)
-            action (Tensor): (action_shape,) | (n_samples, action_shape)
-            next_observation (Tensor): (observation_shape,) | (n_samples, observation_shape)
-            reward (Tensor): (1,) | (n_samples, 1)
-            done (Tensor): (1,) | (n_samples, 1)
-        """
+    def put(self, observation, action, next_observation, reward, done):
         shift_idx = 1
         if len(action.shape) == 2:
             assert (
