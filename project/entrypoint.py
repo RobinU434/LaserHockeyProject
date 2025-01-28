@@ -11,7 +11,7 @@ class Entrypoint:
 
     def train_dreamer(self):
         """_summary_"""
-        pass
+        pass        
 
     def train_sb3_sac(self):
         """_summary_"""
@@ -23,3 +23,7 @@ class Entrypoint:
     def train_sac(self, config: DictConfig, force: bool = False):
         from project.scripts.train import train_sac
         train_sac(config, force)
+
+    @add_hydra("config  ")
+    def train_pendulum(self, config: DictConfig):
+        pass

@@ -13,7 +13,7 @@ from project.algorithms.common.algorithm import _RLAlgorithm
 from project.algorithms.common.buffer import _ReplayBuffer, RigidReplayBuffer
 from project.algorithms.sac.policy_net import PolicyNet
 from project.algorithms.sac.q_net import QNet
-from project.algorithms.utils import PlaceHolderEnv, get_space_dim
+from project.algorithms.utils import PlaceHolderEnv, generate_separator, get_space_dim
 
 
 class SAC(_RLAlgorithm):
@@ -301,7 +301,11 @@ class SAC(_RLAlgorithm):
         return SACAgent(deepcopy(self._pi), deterministic)
 
     def __repr__(self):
-        s = f"================= Policy =================\n{str(self._pi)}\n=============== Q-Function ===============\n{str(self._q1)}"
+        s1 = generate_separator("Policy", 80)
+        s2 = generate_separator("Q-Function", 80)
+        pi_str = str(self._pi)
+        q_str = str(self._q1)
+        s = "\n".join([s1, pi_str, s2, q_str])
         return s
 
 
