@@ -1,6 +1,7 @@
+from typing import Tuple
 import torch
 import torch.nn.functional as F
-from torch import nn, optim
+from torch import Tensor, nn, optim
 
 from project.algorithms.common.network import FeedForwardNetwork
 
@@ -18,27 +19,27 @@ class QNet(nn.Module):
         self.action_head = FeedForwardNetwork(
             action_dim,
             latent_dim,
-            architecture=[128],
+            architecture=[],
             activation_function="ReLU",
             final_activation="ReLU",
         )
         self.state_head = FeedForwardNetwork(
             state_dim,
             latent_dim,
-            architecture=[128],
+            architecture=[],
             activation_function="ReLU",
             final_activation="ReLU",
         )
         self.latent_mlp = FeedForwardNetwork(
             2 * latent_dim,
             1,
-            architecture=[128, 32],
+            architecture=[32],              
             activation_function="ReLU",
             final_activation="ReLU",
         )
-        self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
+        self.optimizer = optim.AdamW(self.parameters(), lr=learning_rate)
 
-    def forward(self, s, a):
+    def forward(self, s: Tensor, a: Tensor) -> Tensor:
         h_state = self.state_head.forward(s)
         h_action = self.action_head.forward(a)
 
@@ -46,7 +47,9 @@ class QNet(nn.Module):
         q = self.latent_mlp.forward(latent)
         return q
 
-    def train_net(self, target, mini_batch):
+    def train_net(
+        self, target: Tensor, mini_batch: Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
+    ) -> Tensor:
         s, a, _, _, _ = mini_batch
         q_val = self.forward(s, a)
         loss = F.smooth_l1_loss(q_val, target).mean()
@@ -56,6 +59,6 @@ class QNet(nn.Module):
 
         return loss
 
-    def soft_update(self, net_target, tau):
+    def soft_update(self, net_target: nn.Module, tau: float):
         for param_target, param in zip(net_target.parameters(), self.parameters()):
             param_target.data.copy_(param_target.data * (1.0 - tau) + param.data * tau)
