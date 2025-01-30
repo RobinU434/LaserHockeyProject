@@ -10,10 +10,15 @@ from tqdm import tqdm
 
 from project.algorithms.common.agent import _Agent
 from project.algorithms.common.algorithm import _RLAlgorithm
-from project.algorithms.common.buffer import _ReplayBuffer, RigidReplayBuffer
+
+# from project.algorithms.common.buffer import ReplayBuffer
+
+from project.algorithms.common.buffer import _ReplayBuffer
+from project.algorithms.sac.buffer import ReplayBuffer
 from project.algorithms.sac.policy_net import PolicyNet
 from project.algorithms.sac.q_net import QNet
 from project.algorithms.utils import PlaceHolderEnv, generate_separator, get_space_dim
+from gymnasium.spaces import Box
 
 
 class SAC(_RLAlgorithm):
@@ -32,7 +37,8 @@ class SAC(_RLAlgorithm):
         tau: float = 0.01,  # for target network soft update,
         target_entropy: float = -1.0,  # for automated alpha update,
         lr_alpha: float = 0.001,  # for automated alpha update
-        action_magnitude: float = 1,
+        action_scale: float = None,
+        action_bias: float = 0,
         actor_config: dict = None,
         eval_env: List[Env] = None,
         eval_check_interval: int = None,
@@ -64,7 +70,8 @@ class SAC(_RLAlgorithm):
         self._tau = tau  # for target network soft update
         self._target_entropy = target_entropy  # for automated alpha update
         self._lr_alpha = lr_alpha  # for automated alpha update
-        self._action_magnitude = action_magnitude
+        self._action_scale = action_scale
+        self._action_bias = action_bias
         self._actor_config = actor_config if actor_config is not None else {}
 
         self._state_dim = get_space_dim(self._env.observation_space)
@@ -87,41 +94,51 @@ class SAC(_RLAlgorithm):
             state_dim=self._state_dim,
             action_dim=self._action_dim,
             learning_rate=self._lr_q,
+            latent_dim=64,
         )
         self._q2 = QNet(
             state_dim=self._state_dim,
             action_dim=self._action_dim,
             learning_rate=self._lr_q,
+            latent_dim=64,
         )
         self._q1_target = QNet(
             state_dim=self._state_dim,
             action_dim=self._action_dim,
             learning_rate=self._lr_q,
+            latent_dim=64,
         )
         self._q2_target = QNet(
             state_dim=self._state_dim,
             action_dim=self._action_dim,
             learning_rate=self._lr_q,
+            latent_dim=64,
         )
 
         self._q1_target.load_state_dict(self._q1.state_dict().copy())
         self._q2_target.load_state_dict(self._q2.state_dict().copy())
 
     def _build_policy(self):
+        if self._action_scale is None and isinstance(self._env.action_space, Box):
+            action_space: Box = self._env.action_space
+            self._action_scale = float(action_space.high - action_space.low)
+            self._action_bias = float((action_space.high + action_space.low) / 2)
         self._pi = PolicyNet(
             input_dim=self._state_dim,
             output_dim=self._action_dim,
             learning_rate=self._lr_pi,
             init_alpha=self._init_alpha,
             lr_alpha=self._lr_alpha,
-            action_magnitude=self._action_magnitude,
+            action_scale=self._action_scale,
+            action_bias=self._action_bias,
             **self._actor_config,
         )
 
     def _build_buffer(self):
-        self._memory = RigidReplayBuffer(
-            self._buffer_limit, self._action_dim, self._state_dim, 1
-        )
+        # self._memory = RigidReplayBuffer(
+        #     self._buffer_limit, self._action_dim, self._state_dim, 1
+        # )
+        self._memory = ReplayBuffer(self._buffer_limit)
 
     def calc_target(
         self, mini_batch: Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
@@ -132,8 +149,8 @@ class SAC(_RLAlgorithm):
             mini_batch (Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]): minibatch with:
                 - state
                 - action
-                - reward
                 - next_state,
+                - reward
                 - done
 
         Returns:
@@ -142,15 +159,23 @@ class SAC(_RLAlgorithm):
         _, _, s_prime, r, done = mini_batch
         with torch.no_grad():
             a_prime, log_prob = self._pi.forward(s_prime)
-            entropy = -self._pi.log_alpha.exp() * log_prob
-            entropy = entropy.unsqueeze(dim=1)
+            entropy = -self._pi.log_alpha.exp().detach() * log_prob[:, None]
 
-            q1_val = self._q1_target(s_prime, a_prime)
-            q2_val = self._q2_target(s_prime, a_prime)
+            q1_val = self._q1_target.forward(s_prime, a_prime)
+            q2_val = self._q2_target.forward(s_prime, a_prime)
             q1_q2 = torch.cat([q1_val, q2_val], dim=1)
-
             min_q = torch.min(q1_q2, 1, keepdim=True)[0]
-            target = r + self._gamma * done * (min_q + entropy)
+            target = r + self._gamma * (1 - done) * (min_q + entropy)
+
+            if torch.isnan(target).any().item():
+                print(torch.isnan(min_q).any(), torch.isnan(entropy).any())
+                print(
+                    torch.isnan(s_prime).any(),
+                    torch.isnan(r).any(),
+                    torch.isnan(a_prime).any(),
+                    torch.isnan(log_prob).any(),
+                )
+                print("____")
         return target
 
     def collect_episode(self, episode_idx: int):
@@ -167,25 +192,27 @@ class SAC(_RLAlgorithm):
             a, log_prob = self._pi.forward(s_input[None])
 
             # detach grad from action to apply it to the environment where it is converted into a numpy.ndarray
-            a = a[0].detach()
+            a = a.detach()[0]
             s_prime, r, done, truncated, _ = self._env.step(a.numpy())
 
-            self._memory.put(
-                torch.from_numpy(s),
-                a,
-                torch.from_numpy(s_prime),
-                torch.tensor([r]),
-                torch.tensor([done]),
-            )
+            # self._memory.put(
+            #     torch.from_numpy(s),
+            #     a,
+            #     torch.from_numpy(s_prime),
+            #     torch.tensor([r]),
+            #     torch.tensor([done]),
+            # )
+            self._memory.put((s, a, s_prime, r, done))
+    
             s = s_prime
 
             score += r
             step_counter += 1
             log_densities.append(log_prob.item())
 
-        self.log_scalar("mean_score", score / step_counter, episode_idx)
+        self.log_scalar("mean_score", score, episode_idx)
         self.log_scalar("episode_steps", step_counter, episode_idx)
-        self.log_scalar("sac/log_density", np.mean(log_densities), episode_idx)
+        self.log_scalar("sac/log_prob", np.mean(log_densities), episode_idx)
 
     def train_nets(self, episode_idx: int):
         logging_entropy = []
@@ -213,18 +240,14 @@ class SAC(_RLAlgorithm):
             self._q1.soft_update(self._q1_target, self._tau)
             self._q2.soft_update(self._q2_target, self._tau)
 
-        self.log_scalar(
-            "sac/entropy", torch.tensor(logging_entropy).mean().item(), episode_idx
-        )
-        self.log_scalar(
-            "sac/actor_loss", torch.tensor(actor_losses).mean().item(), episode_idx
-        )
-        self.log_scalar(
-            "sac/critic_loss", torch.tensor(critic_losses).mean().item(), episode_idx
-        )
-        self.log_scalar(
-            "sac/alpha_loss", torch.tensor(alpha_losses).mean().item(), episode_idx
-        )
+        logging_entropy = torch.tensor(logging_entropy).mean().item()
+        actor_losses = torch.tensor(actor_losses).mean().item()
+        critic_losses = torch.tensor(critic_losses).mean().item()
+        alpha_losses = torch.tensor(alpha_losses).mean().item()
+        self.log_scalar("sac/entropy", logging_entropy, episode_idx)
+        self.log_scalar("sac/actor_loss", actor_losses, episode_idx)
+        self.log_scalar("sac/critic_loss", critic_losses, episode_idx)
+        self.log_scalar("sac/alpha_loss", alpha_losses, episode_idx)
 
     def train(self, n_episodes: int = 1000):
         if isinstance(self._env, PlaceHolderEnv):
@@ -234,7 +257,7 @@ class SAC(_RLAlgorithm):
         for episode_idx in tqdm(range(n_episodes), desc="train sac", unit="episodes"):
             self.collect_episode(episode_idx)
 
-            if len(self._memory) > self._start_buffer_size:
+            if len(self._memory) >= self._start_buffer_size:
                 self.train_nets(episode_idx)
 
             if (
@@ -276,6 +299,8 @@ class SAC(_RLAlgorithm):
                 "hparams": vars(self.hparams),
                 "action_dim": self._action_dim,
                 "state_dim": self._state_dim,
+                "action_scale": self._action_scale,
+                "action_bias": self._action_bias,
             },
             path,
         )
