@@ -189,9 +189,11 @@ class SelfPlayTrainer:
         # weak training
         self.rl_algorithm.update_env(self.warmup_schedule.weak_env)
         self.rl_algorithm.train(self.warmup_schedule.n_episodes_weak)
+        self.rl_algorithm.episode_offset += self.warmup_schedule.n_episodes_weak
         # strong training
         self.rl_algorithm.update_env(self.warmup_schedule.strong_env)
         self.rl_algorithm.train(self.warmup_schedule.n_episodes_strong)
+        self.rl_algorithm.episode_offset += self.warmup_schedule.n_episodes_strong
 
     def train(self, n_episodes: int):
         self.do_warmup(n_episodes)
@@ -220,3 +222,5 @@ class SelfPlayTrainer:
             self.rl_algorithm.update_env(self.env)
             # start training
             self.rl_algorithm.train(self_play_budget)
+            self.rl_algorithm.episode_offset += self_play_budget        
+
