@@ -11,8 +11,8 @@ SelfPlay:
     mode: NORMAL
     verbose: false
   WarmupSchedule:
-    n_episodes_weak: 5
-    n_episodes_strong: 5
+    n_episodes_weak: 200
+    n_episodes_strong: 800
 
 SAC:
   lr_pi: 0.0005
@@ -26,8 +26,9 @@ SAC:
   tau: 0.01  # for target network soft update
   target_entropy: -1.0  # for automated alpha update
   lr_alpha: 0.001  # for automated alpha update
-  action_magnitude: 1
-  actor_config:
-    architecture: [128, 128]
+  action_scale: 2
+  action_bias: 0
+  actor_config: 
+    architecture: null  # [128]
     activation_function: ReLU
     latent_dim: 128

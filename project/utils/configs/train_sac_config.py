@@ -50,7 +50,8 @@ class _SAC(StructuredConfig):
     tau: float = None
     target_entropy: float = None
     lr_alpha: float = None
-    action_magnitude: int = None
+    action_scale: int = None
+    action_bias: int = None
     actor_config: _Actor_config = None
 
     def __post_init__(self):

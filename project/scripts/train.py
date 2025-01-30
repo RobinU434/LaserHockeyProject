@@ -1,18 +1,22 @@
 import gymnasium
 import hydra
+from gymnasium.spaces import Box
 from omegaconf import DictConfig
 from stable_baselines3.common.logger import configure
 
 from project.algorithms.common.logger import CSVLogger, TensorBoardLogger
 from project.algorithms.sac.sac import SAC
-from project.algorithms.trainer import (ExponentialSampler, SelfPlayTrainer,
-                                        WarmupSchedule)
+from project.algorithms.trainer import (
+    ExponentialSampler,
+    SelfPlayTrainer,
+    WarmupSchedule,
+)
 from project.environment.evaluate_env import EvalHockeEnv
 from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
 from project.environment.single_player_env import SinglePlayerHockeyEnv
 from project.utils.configs.train_sac_config import Config as SACConfig
-# from project.environment.hockey_env.hdf5_replay_buffer import HDF5ReplayBuffer
 
+# from project.environment.hockey_env.hdf5_replay_buffer import HDF5ReplayBuffer
 
 
 def train_dreamer():
@@ -51,7 +55,7 @@ def train_sac(config: DictConfig, force: bool = False):
         eval_check_interval=config.eval_check_interval,
         save_interval=config.save_interval,
         log_dir=log_dir,
-        **config.SAC.to_container()
+        **config.SAC.to_container(),
     )
 
     # build trainer
@@ -95,3 +99,34 @@ def train_sac(config: DictConfig, force: bool = False):
     """
     trainer.train(config.episode_budget)
     # train algorithm
+
+
+def train_sac_pendulum(config: DictConfig, force: bool):
+    config: SACConfig = SACConfig.from_dict_config(config)
+    # build envs (train, eval env)
+    train_env = gymnasium.make("Pendulum-v1", max_episode_steps=200)
+
+    action_space: Box = train_env.action_space
+    config.SAC.action_scale = float(action_space.high - action_space.low)
+    config.SAC.action_bias = float((action_space.high + action_space.low) / 2)
+
+    # build algorithm
+    log_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
+    sac = SAC(
+        train_env,
+        logger=logger,
+        save_interval=config.save_interval,
+        log_dir=log_dir,
+        **config.SAC.to_container(),
+    )
+    print(sac)
+
+    if not force:
+        question = input("Would you like to start to train? [Y, n]")
+        if not (question is None or question.lower().strip() in ["", "y", "yes"]):
+            print("Abort training")
+            return
+
+    # train algorithm
+    sac.train(config.episode_budget)

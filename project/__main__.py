@@ -27,6 +27,17 @@ def execute(args: dict) -> bool:
                 config_name="train_sac.yaml",
             )
 
+        case "train-sac-pendulum":
+            api.hydra_plugin.hydra_wrapper(
+                module.train_sac_pendulum,
+                args,
+                command_parser["train_sac_pendulum"],
+                config_var_name="config",
+                version_base=None,
+                config_path=str(Path.cwd().joinpath("config")),
+                config_name="train_sac.yaml",
+            )
+
         case _:
             return False
 

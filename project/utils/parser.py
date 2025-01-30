@@ -1,5 +1,17 @@
 from argparse import ArgumentParser
-from typing import Dict, Tuple
+from typing import Tuple, Dict, List
+
+
+def add_train_sac_pendulum_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument(
+        "--force",
+        help="--no-documentation-exists--",
+        dest="force",
+        action="store_true",
+        required=False,
+    )
+    return parser
+
 
 from pyargwriter.api.hydra_plugin import add_hydra_parser
 
@@ -40,6 +52,12 @@ def setup_entrypoint_parser(
     train_sac = add_train_sac_args(train_sac)
     train_sac = add_hydra_parser(train_sac)
     subparser["train_sac"] = train_sac
+    train_sac_pendulum = command_subparser.add_parser(
+        "train-sac-pendulum", help="--no-documentation-exists--"
+    )
+    train_sac_pendulum = add_train_sac_pendulum_args(train_sac_pendulum)
+    train_sac_pendulum = add_hydra_parser(train_sac_pendulum)
+    subparser["train_sac_pendulum"] = train_sac_pendulum
     return parser, subparser
 
 
