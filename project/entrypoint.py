@@ -36,3 +36,14 @@ class Entrypoint:
         from project.scripts.train import train_sac_gym_env
 
         train_sac_gym_env(config, force, gym_env, max_steps)
+
+    def render_sac_gym(
+        self,
+        checkpoint: str,
+        gym_env: str,
+        deterministic: bool = False,
+        max_steps: int = 200,
+    ):
+        from project.scripts.render import render_sac
+
+        render_sac(checkpoint, gym_env, deterministic, max_steps)

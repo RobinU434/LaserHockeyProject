@@ -38,6 +38,14 @@ def execute(args: dict) -> bool:
                 config_name="train_sac.yaml",
             )
 
+        case "render-sac-gym":
+            module.render_sac_gym(
+                checkpoint=args["checkpoint"],
+                gym_env=args["gym_env"],
+                deterministic=args["deterministic"],
+                max_steps=args["max_steps"],
+            )
+
         case _:
             return False
 
