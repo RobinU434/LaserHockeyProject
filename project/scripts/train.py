@@ -6,6 +6,7 @@ from omegaconf import DictConfig
 from stable_baselines3.common.logger import configure
 
 from project.algorithms.common.logger import CSVLogger, TensorBoardLogger
+from project.algorithms.env_wrapper import TanhWrapper
 from project.algorithms.sac.sac import SAC
 from project.algorithms.trainer import (
     ExponentialSampler,
@@ -16,7 +17,7 @@ from project.environment.evaluate_env import EvalHockeEnv
 from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
 from project.environment.single_player_env import SinglePlayerHockeyEnv
 from project.utils.configs.train_sac_config import Config as SACConfig
-
+from gymnasium.wrappers import NormalizeReward
 # from project.environment.hockey_env.hdf5_replay_buffer import HDF5ReplayBuffer
 
 
@@ -115,6 +116,8 @@ def train_sac_gym_env(
         train_env = gymnasium.make(
             "LunarLander-v3", continuous=True, max_episode_steps=max_steps
         )
+    train_env = TanhWrapper(train_env, 1000)
+    
     print("Train on environment: ", gym_env)
     action_space: Box = train_env.action_space
     config.SAC.action_scale = action_space.high - action_space.low
