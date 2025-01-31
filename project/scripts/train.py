@@ -1,3 +1,4 @@
+from pathlib import Path
 import gymnasium
 import hydra
 from gymnasium.spaces import Box
@@ -120,7 +121,9 @@ def train_sac_gym_env(
     config.SAC.action_bias = (action_space.high + action_space.low) / 2.0
 
     # build algorithm
-    log_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    log_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
+    subfolder_name = gym_env.split("-")[0]
+    log_dir = log_dir.parent / subfolder_name / log_dir.name
     logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
     sac = SAC(
         train_env,
