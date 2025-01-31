@@ -38,8 +38,6 @@ class SAC(_RLAlgorithm):
         tau: float = 0.01,  # for target network soft update,
         target_entropy: float = None,  # for automated alpha update,
         lr_alpha: float = 0.001,  # for automated alpha update
-        action_scale: float = None,
-        action_bias: float = 0,
         actor_config: dict = None,
         eval_env: List[Env] = None,
         eval_check_interval: int = None,
@@ -59,10 +57,10 @@ class SAC(_RLAlgorithm):
             **kwargs,
         )
         self.save_hyperparmeters()
-    
+
         self._lr_pi = lr_pi
         self._lr_q = lr_q
-        self._init_alpha = init_alpha   
+        self._init_alpha = init_alpha
         self._gamma = gamma
         self._batch_size = batch_size
         self._buffer_limit = buffer_limit
@@ -75,8 +73,6 @@ class SAC(_RLAlgorithm):
             else -float(self._env.action_space.shape.item())
         )
         self._lr_alpha = lr_alpha  # for automated alpha update
-        self._action_scale = action_scale
-        self._action_bias = action_bias
         self._actor_config = actor_config if actor_config is not None else {}
 
         self._state_dim = get_space_dim(self._env.observation_space)
@@ -91,6 +87,8 @@ class SAC(_RLAlgorithm):
         self._q2_target: QNet
         self._build_q_networks()
 
+        self._action_scale: Tensor
+        self._action_bias: Tensor
         self._pi: PolicyNet
         self._build_policy()
 
@@ -124,10 +122,22 @@ class SAC(_RLAlgorithm):
         self._q2_target.load_state_dict(self._q2.state_dict().copy())
 
     def _build_policy(self):
-        if self._action_scale is None and isinstance(self._env.action_space, Box):
-            action_space: Box = self._env.action_space
-            self._action_scale = float(action_space.high - action_space.low)
-            self._action_bias = float((action_space.high + action_space.low) / 2)
+        if not isinstance(self._env.action_space, Box):
+            raise ValueError("SAC currently only works on a continuos acition space")
+        action_space: Box = self._env.action_space
+        self._action_scale = action_space.high - action_space.low
+        self._action_scale = (
+            torch.Tensor([self._action_scale])
+            if isinstance(self._action_scale, float)
+            else torch.from_numpy(self._action_scale)
+        )
+        self._action_bias = (action_space.high + action_space.low) / 2.0
+        self._action_bias = (
+            torch.Tensor([self._action_bias])
+            if isinstance(self._action_bias, float)
+            else torch.from_numpy(self._action_bias)
+        )
+
         self._pi = PolicyNet(
             input_dim=self._state_dim,
             output_dim=self._action_dim,
