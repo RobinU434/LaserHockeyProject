@@ -6,20 +6,19 @@ from torch import Tensor
 from torch.utils.data import Dataset
 import numpy as np
 
-from project.algorithms.utils import detach_tensor
-
-
 class _ReplayBuffer(Dataset):
     def __init__(self, buffer_limit: int):
         super().__init__()
         self._buffer_limit = buffer_limit
         self._count = 0
 
-        self._observations: Iterable[Tensor]
+        self._obs: Iterable[Tensor]
         self._actions: Iterable[Tensor]
-        self._next_observations: Iterable[Tensor]
+        self._next_obs: Iterable[Tensor]
         self._rewards: Iterable[Tensor]
         self._dones: Iterable[Tensor]
+
+        self._sampling_weights = Iterable[float]
 
     def put(
         self,
@@ -28,6 +27,7 @@ class _ReplayBuffer(Dataset):
         next_observation: Tensor,
         reward: Tensor,
         done: Tensor,
+        sampling_weight: Tensor | float = None
     ):
         """appends or extends buffer elements
 
@@ -37,6 +37,7 @@ class _ReplayBuffer(Dataset):
             next_observation (Tensor): (observation_shape,) | (n_samples, observation_shape)
             reward (Tensor): (1,) | (n_samples, 1)
             done (Tensor): (1,) | (n_samples, 1)
+            sampling_weight (Tensor) | float:  (n_samples,) or simple float
         """
         raise NotImplementedError
 
@@ -50,12 +51,21 @@ class _ReplayBuffer(Dataset):
             Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]: observations, actions, next_observations, rewards, dones
         """
         return (
-            self._observations[index].detach().float(),
+            self._obs[index].detach().float(),
             self._actions[index].detach().float(),
-            self._next_observations[index].detach().float(),
+            self._next_obs[index].detach().float(),
             self._rewards[index].detach().float(),
             self._dones[index].detach().float(),
         )
+    
+    def _get_sample_idx(self, n: int, replace: bool = False) -> np.ndarray:
+        if None in self._sampling_weights:
+            weights = None 
+        else:
+            weights = np.array(self._sampling_weights)
+            weights /= weights.sum()
+
+        return np.random.choice(self._count, size=n, replace=replace, p=weights)
 
     def sample(
         self, batch_size: int = 1, replace: bool = False
@@ -68,7 +78,8 @@ class _ReplayBuffer(Dataset):
         Returns:
             Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]: observations, actions, next_observations, rewards, dones
         """
-        sample_idx = np.random.choice(self._count, size=batch_size, replace=replace)
+
+        sample_idx = self._get_sample_idx(batch_size, replace)
         return self[sample_idx]
 
     def __len__(self) -> int:
@@ -79,12 +90,14 @@ class ReplayBuffer(_ReplayBuffer):
     def __init__(self, buffer_limit):
         super().__init__(buffer_limit)
         self._actions: deque = deque(maxlen=buffer_limit)
-        self._observations: deque = deque(maxlen=buffer_limit)
-        self._next_observations: deque = deque(maxlen=buffer_limit)
+        self._obs: deque = deque(maxlen=buffer_limit)
+        self._next_obs: deque = deque(maxlen=buffer_limit)
         self._rewards: deque = deque(maxlen=buffer_limit)
         self._dones: deque = deque(maxlen=buffer_limit)
+        self._sampling_weights: deque = deque(maxlen=buffer_limit)
 
-    def put(self, observation, action, next_observation, reward, done):
+    def put(self, observation, action, next_observation, reward, done, sampling_weight = None
+):
         # print(observation.shape, action.shape, next_observation.shape)
         if len(action.shape) == 2:
             assert (
@@ -95,18 +108,20 @@ class ReplayBuffer(_ReplayBuffer):
             ), "If you add multiple actions, observations and rewards at once then add the same amount of each one"
 
             self._actions.extend(list(action))
-            self._observations.extend(list(observation))
-            self._next_observations.extend(list(next_observation))
+            self._obs.extend(list(observation))
+            self._next_obs.extend(list(next_observation))
             self._rewards.extend(list(reward))
             self._dones.extend(list(done))
+            self._sampling_weights.extend(list(sampling_weight))
 
             return
 
-        self._observations.append(observation)
+        self._obs.append(observation)
         self._actions.append(action)
-        self._next_observations.append(next_observation)
+        self._next_obs.append(next_observation)
         self._rewards.append(reward)
         self._dones.append(done)
+        self._sampling_weights.append(sampling_weight)
 
     def sample(self, batch_size=1, replace=False):
         sample_idx = np.random.choice(len(self), batch_size, replace=replace)
@@ -117,9 +132,9 @@ class ReplayBuffer(_ReplayBuffer):
         dones_lst = []
 
         for idx in sample_idx:
-            observations_lst.append(self._observations[idx])
+            observations_lst.append(self._obs[idx])
             actions_lst.append(self._actions[idx])
-            next_observations_lst.append(self._next_observations[idx])
+            next_observations_lst.append(self._next_obs[idx])
             rewards_lst.append(self._rewards[idx])
             dones_lst.append(self._dones[idx])
 
@@ -151,16 +166,13 @@ class RigidReplayBuffer(_ReplayBuffer):
     ):
         super().__init__(buffer_limit)
         self._actions: Tensor = torch.empty((self._buffer_limit, action_shape))
-        self._observations: Tensor = torch.empty(
-            (self._buffer_limit, observation_shape)
-        )
-        self._next_observations: Tensor = torch.empty(
-            (self._buffer_limit, observation_shape)
-        )
+        self._obs: Tensor = torch.empty((self._buffer_limit, observation_shape))
+        self._next_obs: Tensor = torch.empty((self._buffer_limit, observation_shape))
         self._rewards: Tensor = torch.empty((self._buffer_limit, reward_shape))
         self._dones: Tensor = torch.empty((self._buffer_limit, 1))
+        self._sampling_weights: Tensor = torch.empty((self._buffer_limit, 1))
 
-    def put(self, observation, action, next_observation, reward, done):
+    def put(self, observation, action, next_observation, reward, done, sampling_weight = None):
         shift_idx = 1
         if len(action.shape) == 2:
             assert (
@@ -173,16 +185,17 @@ class RigidReplayBuffer(_ReplayBuffer):
 
         self._actions[:-shift_idx] = self._actions[shift_idx:].clone()
         self._actions[-shift_idx:] = action
-        self._observations[:-shift_idx] = self._observations[shift_idx:].clone()
-        self._observations[-shift_idx:] = observation
-        self._next_observations[:-shift_idx] = self._next_observations[
-            shift_idx:
-        ].clone()
-        self._next_observations[-shift_idx:] = next_observation
+        self._obs[:-shift_idx] = self._obs[shift_idx:].clone()
+        self._obs[-shift_idx:] = observation
+        self._next_obs[:-shift_idx] = self._next_obs[shift_idx:].clone()
+        self._next_obs[-shift_idx:] = next_observation
         self._rewards[:-shift_idx] = self._rewards[shift_idx:].clone()
         self._rewards[-shift_idx:] = reward
         self._dones[:-shift_idx] = self._dones[shift_idx:].clone()
-        self._dones[-shift_idx:] = reward
+        self._dones[-shift_idx:] = done
+        self._sampling_weights[:-shift_idx] = self._sampling_weights[shift_idx:].clone()
+        self._sampling_weights[-shift_idx:] = sampling_weight
+        
 
         if self._count < self._buffer_limit:
             self._count += shift_idx
