@@ -28,7 +28,7 @@ SAC:
   lr_alpha: 0.001  # for automated alpha update
   action_scale: 2
   action_bias: 0
-  experience_replay: true
+  experience_replay: false 
   actor_config: 
     architecture: [128, 128]
     activation_function: ReLU
