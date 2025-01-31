@@ -7,6 +7,7 @@ from torch.distributions import Normal, constraints
 
 from project.algorithms.sac.actor import Actor
 from project.algorithms.sac.q_net import QNet
+from project.algorithms.utils import get_min_q
 
 
 class PolicyNet(nn.Module):
@@ -92,10 +93,8 @@ class PolicyNet(nn.Module):
         # minus: to change the sign from the log prob -> log prob is normally negative
         entropy = -self.log_alpha.exp().detach() * log_prob
 
-        q1_val, q2_val = q1.forward(s, a), q2.forward(s, a)
-        q1_q2 = torch.cat([q1_val, q2_val], dim=1)
-        min_q = torch.min(q1_q2, 1, keepdim=True)[0]
-
+        min_q = get_min_q(q1, q2, s, a)
+        
         loss = -min_q - entropy  # for gradient ascent
         loss = torch.mean(loss)
         self.actor.train(loss)
