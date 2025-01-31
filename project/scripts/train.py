@@ -101,14 +101,24 @@ def train_sac(config: DictConfig, force: bool = False):
     # train algorithm
 
 
-def train_sac_pendulum(config: DictConfig, force: bool):
+def train_sac_gym_env(
+    config: DictConfig,
+    force: bool,
+    gym_env: str,
+    max_steps: int = 200,
+):
     config: SACConfig = SACConfig.from_dict_config(config)
     # build envs (train, eval env)
-    train_env = gymnasium.make("Pendulum-v1", max_episode_steps=200)
+    train_env = gymnasium.make(gym_env, max_episode_steps=max_steps)
+    if gym_env == "LunarLander-v3":
+        train_env = gymnasium.make(
+            "LunarLander-v3", continuous=True, max_episode_steps=max_steps
+        )
+    print(train_env)
 
     action_space: Box = train_env.action_space
-    config.SAC.action_scale = float(action_space.high - action_space.low)
-    config.SAC.action_bias = float((action_space.high + action_space.low) / 2)
+    config.SAC.action_scale = action_space.high - action_space.low
+    config.SAC.action_bias = (action_space.high + action_space.low) / 2.0
 
     # build algorithm
     log_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir

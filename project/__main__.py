@@ -16,22 +16,22 @@ def execute(args: dict) -> bool:
         case "train-sb3-sac":
             module.train_sb3_sac()
 
-        case "train-sac":
+        case "train-sac-hockey":
             api.hydra_plugin.hydra_wrapper(
-                module.train_sac,
+                module.train_sac_hockey,
                 args,
-                command_parser["train_sac"],
+                command_parser["train_sac_hockey"],
                 config_var_name="config",
                 version_base=None,
                 config_path=str(Path.cwd().joinpath("config")),
                 config_name="train_sac.yaml",
             )
 
-        case "train-sac-pendulum":
+        case "train-sac-gym":
             api.hydra_plugin.hydra_wrapper(
-                module.train_sac_pendulum,
+                module.train_sac_gym,
                 args,
-                command_parser["train_sac_pendulum"],
+                command_parser["train_sac_gym"],
                 config_var_name="config",
                 version_base=None,
                 config_path=str(Path.cwd().joinpath("config")),
