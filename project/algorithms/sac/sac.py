@@ -11,10 +11,11 @@ from tqdm import tqdm
 from project.algorithms.common.agent import _Agent
 from project.algorithms.common.algorithm import _RLAlgorithm
 
-# from project.algorithms.common.buffer import ReplayBuffer
+from project.algorithms.common.buffer import ReplayBuffer
 
 from project.algorithms.common.buffer import _ReplayBuffer
-from project.algorithms.sac.buffer import ReplayBuffer
+
+# from project.algorithms.sac.buffer import ReplayBuffer
 from project.algorithms.sac.policy_net import PolicyNet
 from project.algorithms.sac.q_net import QNet
 from project.algorithms.utils import PlaceHolderEnv, generate_separator, get_space_dim
@@ -159,23 +160,13 @@ class SAC(_RLAlgorithm):
         _, _, s_prime, r, done = mini_batch
         with torch.no_grad():
             a_prime, log_prob = self._pi.forward(s_prime)
-            entropy = -self._pi.log_alpha.exp().detach() * log_prob[:, None]
+            entropy = -self._pi.log_alpha.exp().detach() * log_prob
 
             q1_val = self._q1_target.forward(s_prime, a_prime)
             q2_val = self._q2_target.forward(s_prime, a_prime)
             q1_q2 = torch.cat([q1_val, q2_val], dim=1)
             min_q = torch.min(q1_q2, 1, keepdim=True)[0]
-            target = r + self._gamma * (1 - done) * (min_q + entropy)
-
-            if torch.isnan(target).any().item():
-                print(torch.isnan(min_q).any(), torch.isnan(entropy).any())
-                print(
-                    torch.isnan(s_prime).any(),
-                    torch.isnan(r).any(),
-                    torch.isnan(a_prime).any(),
-                    torch.isnan(log_prob).any(),
-                )
-                print("____")
+            target = r + self._gamma * (1 - done) * (min_q + entropy)       
         return target
 
     def collect_episode(self, episode_idx: int):
@@ -186,24 +177,24 @@ class SAC(_RLAlgorithm):
         s, _ = self._env.reset()
         done = False
         truncated = False
-        while not done and not truncated:
+        while not (done or truncated):
             s_input = torch.from_numpy(s).float()
             # introduce batch size 1
             a, log_prob = self._pi.forward(s_input[None])
 
             # detach grad from action to apply it to the environment where it is converted into a numpy.ndarray
             a = a.detach()[0]
-            s_prime, r, done, truncated, _ = self._env.step(a.numpy())
+            s_prime, r, done, truncated, _ = self._env.step(2.0 * a.numpy())
 
-            # self._memory.put(
-            #     torch.from_numpy(s),
-            #     a,
-            #     torch.from_numpy(s_prime),
-            #     torch.tensor([r]),
-            #     torch.tensor([done]),
-            # )
-            self._memory.put((s, a, s_prime, r, done))
-    
+            self._memory.put(
+                torch.from_numpy(s),
+                a,
+                torch.from_numpy(s_prime),
+                torch.tensor([r]) / 10.0,
+                torch.tensor([done], dtype=float),
+            )
+            # self._memory.put((s, a, s_prime, r, done))
+
             s = s_prime
 
             score += r
@@ -244,10 +235,12 @@ class SAC(_RLAlgorithm):
         actor_losses = torch.tensor(actor_losses).mean().item()
         critic_losses = torch.tensor(critic_losses).mean().item()
         alpha_losses = torch.tensor(alpha_losses).mean().item()
+        alpha = self._pi.log_alpha.exp().item()
         self.log_scalar("sac/entropy", logging_entropy, episode_idx)
         self.log_scalar("sac/actor_loss", actor_losses, episode_idx)
         self.log_scalar("sac/critic_loss", critic_losses, episode_idx)
         self.log_scalar("sac/alpha_loss", alpha_losses, episode_idx)
+        self.log_scalar("sac/alpha", alpha, episode_idx)
 
     def train(self, n_episodes: int = 1000):
         if isinstance(self._env, PlaceHolderEnv):
@@ -262,16 +255,16 @@ class SAC(_RLAlgorithm):
 
             if (
                 self._save_interval is not None
-                and (n_episodes + 1) % self._save_interval == 0
+                and (episode_idx + 1) % self._save_interval == 0
             ):
                 # save model
                 self.save_checkpoint(episode_idx)
 
             if (
                 self._eval_check_interval is not None
-                and (n_episodes + 1) % self._eval_check_interval == 0
+                and (episode_idx + 1) % self._eval_check_interval == 0
             ):
-                self.evaluate(episode_idx)
+                self.evaluate(episode_idx + 1)
 
         # store metrics in a csv file
         self.save_metrics()

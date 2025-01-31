@@ -8,6 +8,13 @@ def get_space_dim(space: Space) -> int:
         return 1
     return shape[0]
 
+def detach_tensor(*args):
+    res = []
+    for t in args:
+        t.detach()
+        res.append(t)
+    return res
+
 
 class PlaceHolderEnv(Env):
     def __init__(

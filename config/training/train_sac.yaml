@@ -29,6 +29,6 @@ SAC:
   action_scale: 2
   action_bias: 0
   actor_config: 
-    architecture: null  # [128]
+    architecture: [128, 128]
     activation_function: ReLU
     latent_dim: 128

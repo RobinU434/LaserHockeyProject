@@ -35,9 +35,10 @@ class QNet(nn.Module):
             1,
             architecture=[32],              
             activation_function="ReLU",
-            final_activation="ReLU",
+            final_activation=None,
         )
         self.optimizer = optim.AdamW(self.parameters(), lr=learning_rate)
+        # self.criterion = nn.MSELoss()
 
     def forward(self, s: Tensor, a: Tensor) -> Tensor:
         h_state = self.state_head.forward(s)
@@ -52,7 +53,8 @@ class QNet(nn.Module):
     ) -> Tensor:
         s, a, _, _, _ = mini_batch
         q_val = self.forward(s, a)
-        loss = F.smooth_l1_loss(q_val, target).mean()
+        loss = F.smooth_l1_loss(q_val, target).mean()   
+        # loss = self.criterion.forward(q_val, target)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()

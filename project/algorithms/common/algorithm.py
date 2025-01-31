@@ -42,6 +42,7 @@ class _RLAlgorithm(ABC):
         )
 
         self.hparams = Namespace()
+        self.episode_offset = 0
 
     def save_hyperparmeters(self, *args):
         # Get the frame of the calling function (i.e., the __init__ method)
@@ -75,9 +76,9 @@ class _RLAlgorithm(ABC):
     def update_env(self, env: Env):
         self._env = env
 
-    def log_scalar(self, name: str, value: float, step: int):
+    def log_scalar(self, name: str, value: float, episode: int):
         for logger in self._logger:
-            logger.log_scalar(name, value, step)
+            logger.log_scalar(name, value, episode + self.episode_offset)
 
     def save_metrics(self):
         for logger in self._logger:
@@ -96,6 +97,14 @@ class _RLAlgorithm(ABC):
             for k, v in metrics.items():
                 self.log_scalar(k, v, episode_idx)
 
+    def set_episode_offset(self, offset: int):
+        """sets the episode offset for logging. Particularly interesting if you start the train function multiple time on the same class to refine the agent further
+
+        Args:
+            offset (int): _description_
+        """
+        self.episode_offset = offset
+
     @abstractmethod
     def save_checkpoint(self, episode_idx: int, path: Path | str = None):
         raise NotImplementedError
@@ -105,7 +114,10 @@ class _RLAlgorithm(ABC):
         checkpoint_content = torch.load(checkpoint, weights_only=True)
         if env is None:
             env = PlaceHolderEnv(
-                checkpoint_content["state_dim"], checkpoint_content["action_dim"]
+                checkpoint_content["state_dim"],
+                checkpoint_content["action_dim"],
+                checkpoint_content["action_scale"],
+                checkpoint_content["action_bias"],
             )
 
         sac: _RLAlgorithm = cls(env=env, **checkpoint_content["hparams"])
