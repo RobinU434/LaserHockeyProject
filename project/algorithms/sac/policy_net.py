@@ -65,7 +65,7 @@ class PolicyNet(nn.Module):
         #     log_prob = log_prob[:, 0]
 
         # real_action = (torch.tanh(action) + 1.0) * torch.pi  # multiply by pi in order to match the action space
-        
+
         # Squash correction (from original SAC implementation)
         # this comes from the fact that tanh is a bijection and differentiable
         # this equation can be found in the original paper as equation (21)
@@ -74,7 +74,7 @@ class PolicyNet(nn.Module):
             torch.log(1 - torch.tanh(action).square() + 1e-7), dim=-1, keepdim=True
         )
 
-            # TODO(RobunU434): add post processor functionality in here
+        # TODO(RobunU434): add post processor functionality in here
         if self.action_scale is not None:
             action = torch.tanh(action) * self.action_scale
         action = action + self.action_bias
@@ -90,7 +90,7 @@ class PolicyNet(nn.Module):
         s, _, _, _, _ = mini_batch
         a, log_prob = self.forward(s)
         # minus: to change the sign from the log prob -> log prob is normally negative
-        entropy = -self.log_alpha.exp().detach()  * log_prob
+        entropy = -self.log_alpha.exp().detach() * log_prob
 
         q1_val, q2_val = q1.forward(s, a), q2.forward(s, a)
         q1_q2 = torch.cat([q1_val, q2_val], dim=1)

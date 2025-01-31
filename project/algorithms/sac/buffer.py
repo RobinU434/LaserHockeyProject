@@ -32,7 +32,7 @@ class ReplayBuffer:
         s_prime_lst = torch.empty((n, *s_prime.shape), dtype=dtype)
         done_mask_lst = torch.empty((n, 1), dtype=dtype)
         for idx, transition in enumerate(mini_batch):
-            s, a, s_prime,r, done = transition
+            s, a, s_prime, r, done = transition
             s_lst[idx] = torch.tensor(s)
             a_lst[idx] = a
             r_lst[idx] = torch.tensor([r])

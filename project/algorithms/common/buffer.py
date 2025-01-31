@@ -93,7 +93,7 @@ class ReplayBuffer(_ReplayBuffer):
                 and action.shape[0] == next_observation.shape[0]
                 and action.shape[0] == done.shape[0]
             ), "If you add multiple actions, observations and rewards at once then add the same amount of each one"
-            
+
             self._actions.extend(list(action))
             self._observations.extend(list(observation))
             self._next_observations.extend(list(next_observation))
@@ -107,7 +107,7 @@ class ReplayBuffer(_ReplayBuffer):
         self._next_observations.append(next_observation)
         self._rewards.append(reward)
         self._dones.append(done)
-        
+
     def sample(self, batch_size=1, replace=False):
         sample_idx = np.random.choice(len(self), batch_size, replace=replace)
         actions_lst = []

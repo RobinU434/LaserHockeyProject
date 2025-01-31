@@ -38,12 +38,12 @@ class FeedForwardNetwork(Module):
         # input layer
         if architecture is None or (
             isinstance(architecture, list) and len(architecture) == 0
-        ):  
+        ):
             layer = Linear(self._input_dim, self._output_dim)
             if self._final_activation_cls is not None:
-                layer =  Sequential(layer, self._final_activation_cls())
+                layer = Sequential(layer, self._final_activation_cls())
             return layer
-        
+
         layers = [
             Linear(self._input_dim, int(architecture[0])),
             self._activation_function_cls(),

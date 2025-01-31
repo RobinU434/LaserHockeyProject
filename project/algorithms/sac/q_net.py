@@ -33,7 +33,7 @@ class QNet(nn.Module):
         self.latent_mlp = FeedForwardNetwork(
             2 * latent_dim,
             1,
-            architecture=[32],              
+            architecture=[32],
             activation_function="ReLU",
             final_activation=None,
         )
@@ -53,7 +53,7 @@ class QNet(nn.Module):
     ) -> Tensor:
         s, a, _, _, _ = mini_batch
         q_val = self.forward(s, a)
-        loss = F.smooth_l1_loss(q_val, target).mean()   
+        loss = F.smooth_l1_loss(q_val, target).mean()
         # loss = self.criterion.forward(q_val, target)
         self.optimizer.zero_grad()
         loss.backward()
