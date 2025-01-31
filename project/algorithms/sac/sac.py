@@ -36,7 +36,7 @@ class SAC(_RLAlgorithm):
         start_buffer_size: float = 1000,
         train_iterations: float = 20,
         tau: float = 0.01,  # for target network soft update,
-        target_entropy: float = -1.0,  # for automated alpha update,
+        target_entropy: float = None,  # for automated alpha update,
         lr_alpha: float = 0.001,  # for automated alpha update
         action_scale: float = None,
         action_bias: float = 0,
@@ -59,17 +59,21 @@ class SAC(_RLAlgorithm):
             **kwargs,
         )
         self.save_hyperparmeters()
-
+    
         self._lr_pi = lr_pi
         self._lr_q = lr_q
-        self._init_alpha = init_alpha
+        self._init_alpha = init_alpha   
         self._gamma = gamma
         self._batch_size = batch_size
         self._buffer_limit = buffer_limit
         self._start_buffer_size = start_buffer_size
         self._train_iterations = train_iterations
         self._tau = tau  # for target network soft update
-        self._target_entropy = target_entropy  # for automated alpha update
+        self._target_entropy = (
+            target_entropy
+            if target_entropy is not None
+            else -float(self._env.action_space.shape.item())
+        )
         self._lr_alpha = lr_alpha  # for automated alpha update
         self._action_scale = action_scale
         self._action_bias = action_bias
@@ -166,7 +170,7 @@ class SAC(_RLAlgorithm):
             q2_val = self._q2_target.forward(s_prime, a_prime)
             q1_q2 = torch.cat([q1_val, q2_val], dim=1)
             min_q = torch.min(q1_q2, 1, keepdim=True)[0]
-            target = r + self._gamma * (1 - done) * (min_q + entropy)       
+            target = r + self._gamma * (1 - done) * (min_q + entropy)
         return target
 
     def collect_episode(self, episode_idx: int):
@@ -258,7 +262,7 @@ class SAC(_RLAlgorithm):
                 and (episode_idx + 1) % self._save_interval == 0
             ):
                 # save model
-                self.save_checkpoint(episode_idx)
+                self.save_checkpoint(episode_idx + 1)
 
             if (
                 self._eval_check_interval is not None
