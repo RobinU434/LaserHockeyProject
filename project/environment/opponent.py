@@ -23,4 +23,3 @@ class RandomOpponent(_Agent):
 
     def act(self, state):
         return self.action_space.sample()
-
