@@ -1,25 +1,29 @@
 from copy import deepcopy
+import math
 from pathlib import Path
 from typing import List, Tuple
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from gymnasium import Env
+from gymnasium.spaces import Box
 from torch import Tensor
 from tqdm import tqdm
 
 from project.algorithms.common.agent import _Agent
 from project.algorithms.common.algorithm import _RLAlgorithm
-
-from project.algorithms.common.buffer import ReplayBuffer
-
-from project.algorithms.common.buffer import _ReplayBuffer
+from project.algorithms.common.buffer import ReplayBuffer, _ReplayBuffer
 
 # from project.algorithms.sac.buffer import ReplayBuffer
 from project.algorithms.sac.policy_net import PolicyNet
 from project.algorithms.sac.q_net import QNet
-from project.algorithms.utils import PlaceHolderEnv, generate_separator, get_space_dim
-from gymnasium.spaces import Box
+from project.algorithms.utils import (
+    PlaceHolderEnv,
+    generate_separator,
+    get_min_q,
+    get_space_dim,
+)
 
 
 class SAC(_RLAlgorithm):
@@ -140,6 +144,7 @@ class SAC(_RLAlgorithm):
             else torch.from_numpy(self._action_bias)
         )
 
+        
         self._pi = PolicyNet(
             input_dim=self._state_dim,
             output_dim=self._action_dim,
@@ -178,10 +183,7 @@ class SAC(_RLAlgorithm):
             a_prime, log_prob = self._pi.forward(s_prime)
             entropy = -self._pi.log_alpha.exp().detach() * log_prob
 
-            q1_val = self._q1_target.forward(s_prime, a_prime)
-            q2_val = self._q2_target.forward(s_prime, a_prime)
-            q1_q2 = torch.cat([q1_val, q2_val], dim=1)
-            min_q = torch.min(q1_q2, 1, keepdim=True)[0]
+            min_q = get_min_q(self._q1_target, self._q2_target, s_prime, a_prime)
             target = r + self._gamma * (1 - done) * (min_q + entropy)
         return target
 
@@ -203,20 +205,24 @@ class SAC(_RLAlgorithm):
             s_prime, r, done, truncated, _ = self._env.step(a.numpy())
             score += r
 
+            # NOTE: this is experimental    
+            r = math.tanh(r)
+
             sampling_weight = None
+            # compute experience replay weight as the td error  
             if self._experience_replay:
-                minibatch = (
-                    None,
-                    None,
-                    torch.from_numpy(s_prime)[None],
-                    torch.tensor([r])[None],
-                    torch.tensor([done], dtype=float)[None],
-                )
-                sampling_weight = self.calc_target(minibatch)
-                sampling_weight = torch.exp(
-                    sampling_weight
-                )  # make it guarantied positive -> softmax over sampling
-                sampling_weight = sampling_weight.item()
+                with torch.no_grad():
+                    minibatch = (
+                        None,
+                        None,
+                        torch.from_numpy(s_prime)[None],
+                        torch.tensor([r])[None],
+                        torch.tensor([done], dtype=float)[None],
+                    )
+                    target = self.calc_target(minibatch)
+                    q_pred = get_min_q(self._q1, self._q2, torch.from_numpy(s)[None], a[None])
+                    sampling_weight = F.smooth_l1_loss(q_pred, target).mean()
+                    sampling_weight = sampling_weight.item()
 
             self._memory.put(
                 observation=torch.from_numpy(s),
