@@ -226,7 +226,7 @@ class SAC(_RLAlgorithm):
                 done=torch.tensor([done], dtype=float),
                 sampling_weight=sampling_weight,
             )
-    
+
             s = s_prime
             step_counter += 1
             log_densities.append(log_prob.item())
