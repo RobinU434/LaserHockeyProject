@@ -42,6 +42,7 @@ class SAC(_RLAlgorithm):
         eval_env: List[Env] = None,
         eval_check_interval: int = None,
         save_interval: int = None,
+        experience_replay: bool = False,
         log_dir: str | Path = Path("results"),
         *args,
         **kwargs,
@@ -74,6 +75,7 @@ class SAC(_RLAlgorithm):
         )
         self._lr_alpha = lr_alpha  # for automated alpha update
         self._actor_config = actor_config if actor_config is not None else {}
+        self._experience_replay = experience_replay
 
         self._state_dim = get_space_dim(self._env.observation_space)
         self._action_dim = get_space_dim(self._env.action_space)
@@ -198,20 +200,34 @@ class SAC(_RLAlgorithm):
 
             # detach grad from action to apply it to the environment where it is converted into a numpy.ndarray
             a = a.detach()[0]
-            s_prime, r, done, truncated, _ = self._env.step(2.0 * a.numpy())
+            s_prime, r, done, truncated, _ = self._env.step(a.numpy())
+            score += r
+
+            sampling_weight = None
+            if self._experience_replay:
+                minibatch = (
+                    None,
+                    None,
+                    torch.from_numpy(s_prime)[None],
+                    torch.tensor([r])[None],
+                    torch.tensor([done], dtype=float)[None],
+                )
+                sampling_weight = self.calc_target(minibatch)
+                sampling_weight = torch.exp(
+                    sampling_weight
+                )  # make it guarantied positive -> softmax over sampling
+                sampling_weight = sampling_weight.item()
 
             self._memory.put(
-                torch.from_numpy(s),
-                a,
-                torch.from_numpy(s_prime),
-                torch.tensor([r]) / 10.0,
-                torch.tensor([done], dtype=float),
+                observation=torch.from_numpy(s),
+                action=a,
+                next_observation=torch.from_numpy(s_prime),
+                reward=torch.tensor([r]),
+                done=torch.tensor([done], dtype=float),
+                sampling_weight=sampling_weight,
             )
-            # self._memory.put((s, a, s_prime, r, done))
-
+    
             s = s_prime
-
-            score += r
             step_counter += 1
             log_densities.append(log_prob.item())
 

@@ -24,10 +24,8 @@ class _SelfPlay(StructuredConfig):
     WarmupSchedule: _WarmupSchedule = None
 
     def __post_init__(self):
-        self.Env = _Env(**self.Env)  # pylint: disable=E1134
-        self.WarmupSchedule = _WarmupSchedule(
-            **self.WarmupSchedule
-        )  # pylint: disable=E1134
+        self.Env = _Env(**self.Env)  #pylint: disable=E1134
+        self.WarmupSchedule = _WarmupSchedule(**self.WarmupSchedule)  #pylint: disable=E1134
 
 
 @dataclass
@@ -52,10 +50,11 @@ class _SAC(StructuredConfig):
     lr_alpha: float = None
     action_scale: int = None
     action_bias: int = None
+    experience_replay: bool = None
     actor_config: _Actor_config = None
 
     def __post_init__(self):
-        self.actor_config = _Actor_config(**self.actor_config)  # pylint: disable=E1134
+        self.actor_config = _Actor_config(**self.actor_config)  #pylint: disable=E1134
 
 
 @dataclass
@@ -68,5 +67,5 @@ class Config(StructuredConfig):
     SAC: _SAC = None
 
     def __post_init__(self):
-        self.SelfPlay = _SelfPlay(**self.SelfPlay)  # pylint: disable=E1134
-        self.SAC = _SAC(**self.SAC)  # pylint: disable=E1134
+        self.SelfPlay = _SelfPlay(**self.SelfPlay)  #pylint: disable=E1134
+        self.SAC = _SAC(**self.SAC)  #pylint: disable=E1134
