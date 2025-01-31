@@ -61,11 +61,10 @@ class _ReplayBuffer(Dataset):
 
     def _get_sample_idx(self, n: int, replace: bool = False) -> np.ndarray:
         if None in self._sampling_weights:
-            weights = None
-        else:
-            weights = np.array(self._sampling_weights)
-            weights /= weights.sum()
-
+            return np.random.choice(len(self), size=n, replace=replace)
+        
+        weights = np.array(self._sampling_weights)
+        weights /= weights.sum()
         return np.random.choice(len(self), size=n, replace=replace, p=weights)
 
     def sample(
