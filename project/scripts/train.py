@@ -114,8 +114,7 @@ def train_sac_gym_env(
         train_env = gymnasium.make(
             "LunarLander-v3", continuous=True, max_episode_steps=max_steps
         )
-    print(train_env)
-
+    print("Train on environment: ", gym_env)
     action_space: Box = train_env.action_space
     config.SAC.action_scale = action_space.high - action_space.low
     config.SAC.action_bias = (action_space.high + action_space.low) / 2.0
