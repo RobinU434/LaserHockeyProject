@@ -222,5 +222,4 @@ class SelfPlayTrainer:
             self.rl_algorithm.update_env(self.env)
             # start training
             self.rl_algorithm.train(self_play_budget)
-            self.rl_algorithm.episode_offset += self_play_budget        
-
+            self.rl_algorithm.episode_offset += self_play_budget
