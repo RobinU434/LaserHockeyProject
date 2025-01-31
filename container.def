@@ -24,4 +24,4 @@ from: ubuntu:24.04
 
 %runscript
     . /venv/bin/activate
-    "$@"        
+    "$@"                
