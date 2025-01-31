@@ -206,7 +206,7 @@ class SAC(_RLAlgorithm):
             score += r
 
             # NOTE: this is experimental    
-            r = math.tanh(r)
+            # r = math.tanh(r * 0.5)
 
             sampling_weight = None
             # compute experience replay weight as the td error  
