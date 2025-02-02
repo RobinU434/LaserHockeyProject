@@ -3,12 +3,48 @@ from typing import List, Tuple
 import numpy as np
 import torch
 from torch import Tensor, nn, optim
-from torch.distributions import Normal, constraints
+from torch.distributions import Normal as _Normal
+from torch.distributions import Beta as _Beta
 
 from project.algorithms.sac.actor import Actor
 from project.algorithms.sac.q_net import QNet
 from project.algorithms.utils import get_min_q
 
+class Beta(_Beta):
+    @classmethod
+    def from_stats(cls, loc: Tensor, scale: Tensor) -> "Beta":
+        loc = torch.sigmoid(loc) # has to be between 0 and 1
+        alpha = ((1 - loc) / (scale * scale) - 1 / loc) * loc * loc
+        beta  = alpha * (1 / loc - 1)
+        return cls(alpha, beta)
+    
+    def rsample(self, sample_shape = ...):
+        sample = super().rsample(sample_shape)
+        return sample
+    
+    def squish(self, sample: Tensor) -> Tensor:
+        """to interval: -1, 1
+
+        Args:
+            sample (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        return sample * 2 - 1
+    
+
+class Normal(_Normal):
+    def squish(self, sample: Tensor) -> Tensor:
+        """to interval -1, 1
+
+        Args:
+            sample (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        return torch.tanh(sample)
 
 class PolicyNet(nn.Module):
     def __init__(
@@ -53,9 +89,11 @@ class PolicyNet(nn.Module):
         # if mode = True -> sample from mode else sample with respect to a distribution with non zero std
         # std = std * (1.0 - mode)
 
-        normal_distr = Normal(mu, std)
-        action = normal_distr.rsample()
-        log_prob: Tensor = normal_distr.log_prob(action)
+        distribution = Normal(mu, std)
+        # distribution = Beta.from_stats(mu, std)
+        action = distribution.rsample()
+        log_prob: Tensor = distribution.log_prob(action)
+        action = action # transform into [-1, 1]
         # action = sample * std + mu
         # sum log prob
         # independence assumption between individual probabilities
@@ -77,7 +115,7 @@ class PolicyNet(nn.Module):
 
         # TODO(RobunU434): add post processor functionality in here
         if self.action_scale is not None:
-            action = torch.tanh(action) * self.action_scale
+            action = distribution.squish(action) * self.action_scale
         action = action + self.action_bias
         return action, real_log_prob
 
@@ -94,7 +132,7 @@ class PolicyNet(nn.Module):
         entropy = -self.log_alpha.exp().detach() * log_prob
 
         min_q = get_min_q(q1, q2, s, a)
-        
+
         loss = -min_q - entropy  # for gradient ascent
         loss = torch.mean(loss)
         self.actor.train(loss)
