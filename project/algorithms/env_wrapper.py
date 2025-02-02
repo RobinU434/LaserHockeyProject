@@ -22,3 +22,12 @@ class TanhWrapper(RewardWrapper):
 
     def reward(self, reward):
         return math.tanh(reward / self.max_reward)
+    
+
+class SymLogWrapper(RewardWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+
+    def reward(self, reward):
+        absolute = abs(reward)
+        return reward / absolute * math.log(absolute + 1)

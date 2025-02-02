@@ -6,7 +6,7 @@ from omegaconf import DictConfig
 from stable_baselines3.common.logger import configure
 
 from project.algorithms.common.logger import CSVLogger, TensorBoardLogger
-from project.algorithms.env_wrapper import TanhWrapper
+from project.algorithms.env_wrapper import SymLogWrapper, TanhWrapper
 from project.algorithms.sac.sac import SAC
 from project.algorithms.trainer import (
     ExponentialSampler,
@@ -116,8 +116,9 @@ def train_sac_gym_env(
         train_env = gymnasium.make(
             "LunarLander-v3", continuous=True, max_episode_steps=max_steps
         )
-    train_env = TanhWrapper(train_env, 1000)
-    
+    # train_env = TanhWrapper(train_env, 1000)
+    train_env = SymLogWrapper(train_env)
+        
     print("Train on environment: ", gym_env)
     action_space: Box = train_env.action_space
     config.SAC.action_scale = action_space.high - action_space.low
