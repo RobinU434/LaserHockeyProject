@@ -335,7 +335,7 @@ class SAC(_RLAlgorithm):
         )
 
     def load_checkpoint(self, checkpoint):
-        checkpoint = torch.load(checkpoint, weights_only=True)
+        checkpoint = torch.load(checkpoint, weights_only=False  )
         self._pi.load_state_dict(checkpoint["pi_model_state_dict"])
         self._pi.optimizer.load_state_dict(checkpoint["pi_optimizer_state_dict"])
         self._q1.load_state_dict(checkpoint["q1_model_state_dict"])
