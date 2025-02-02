@@ -111,7 +111,7 @@ class _RLAlgorithm(ABC):
 
     @classmethod
     def from_checkpoint(cls, checkpoint, env: Env = None) -> "_RLAlgorithm":
-        checkpoint_content = torch.load(checkpoint, weights_only=True)
+        checkpoint_content = torch.load(checkpoint, weights_only=False)
         if env is None:
             env = PlaceHolderEnv(
                 checkpoint_content["state_dim"],
