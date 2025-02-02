@@ -22,7 +22,7 @@ class Actor(nn.Module):
         self._core = FeedForwardNetwork(
             input_dim, latent_dim, architecture, activation_function
         )
-        self.fc_mu = nn.Linear(latent_dim, output_dim)
+        self.fc_mu = nn.Sequential(nn.Linear(latent_dim, output_dim))
         self.fc_std = nn.Sequential(nn.Linear(latent_dim, output_dim), nn.Softplus())
         self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
 
