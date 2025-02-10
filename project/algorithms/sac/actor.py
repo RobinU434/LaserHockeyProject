@@ -23,7 +23,7 @@ class Actor(nn.Module):
             input_dim, latent_dim, architecture, activation_function
         )
         self.fc_mu = nn.Sequential(nn.Linear(latent_dim, output_dim))
-        self.fc_std = nn.Sequential(nn.Linear(latent_dim, output_dim), nn.Softplus())
+        self.fc_std = nn.Sequential(nn.Linear(latent_dim, output_dim))
         self.optimizer = optim.Adam(self.parameters(), lr=learning_rate)
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -33,7 +33,7 @@ class Actor(nn.Module):
             x (torch.Tensor): state (state_dim, )
 
         Returns:
-            Tuple[torch.Tensor, torch.Tensor]: mu (action_dim, ), std (action_dim, )
+            Tuple[torch.Tensor, torch.Tensor]: mu (action_dim, ), log_std (action_dim, )
         """
         latent = self._core(x)
 

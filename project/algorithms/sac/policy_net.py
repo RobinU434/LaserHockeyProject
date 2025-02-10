@@ -2,6 +2,7 @@ from typing import List, Tuple
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from torch import Tensor, nn, optim
 from torch.distributions import Normal as _Normal
 from torch.distributions import Beta as _Beta
@@ -11,8 +12,14 @@ from project.algorithms.sac.q_net import QNet
 from project.algorithms.utils import get_min_q
 
 class Beta(_Beta):
+    def __init__(self, log_concentration1, log_concentration0, validate_args=None):
+        concentration1 = F.softplus(log_concentration1)
+        concentration0 = F.softplus(log_concentration0)
+        super().__init__(concentration1, concentration0, validate_args)
+
     @classmethod
-    def from_stats(cls, loc: Tensor, scale: Tensor) -> "Beta":
+    def from_stats(cls, loc: Tensor, log_scale: Tensor) -> "Beta":
+        scale = F.softplus(log_scale)
         loc = torch.sigmoid(loc) # has to be between 0 and 1
         alpha = ((1 - loc) / (scale * scale) - 1 / loc) * loc * loc
         beta  = alpha * (1 / loc - 1)
@@ -35,6 +42,10 @@ class Beta(_Beta):
     
 
 class Normal(_Normal):
+    def __init__(self, loc, log_scale, validate_args=None):
+        scale = F.softplus(log_scale)
+        super().__init__(loc, scale, validate_args)
+
     def squish(self, sample: Tensor) -> Tensor:
         """to interval -1, 1
 
@@ -84,13 +95,14 @@ class PolicyNet(nn.Module):
         Returns:
             Tuple(torch.tensor):
         """
-        mu, std = self.actor.forward(x)
+        param_1, param_2 = self.actor.forward(x)
         # std = torch.exp(log_std)
         # if mode = True -> sample from mode else sample with respect to a distribution with non zero std
         # std = std * (1.0 - mode)
 
-        distribution = Normal(mu, std)
-        # distribution = Beta.from_stats(mu, std)
+        # distribution = Normal(param_1, param_2)
+        distribution = Beta(param_1, param_2)
+        
         action = distribution.rsample()
         log_prob: Tensor = distribution.log_prob(action)
         action = action # transform into [-1, 1]
