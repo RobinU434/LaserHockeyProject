@@ -103,25 +103,25 @@ class SAC(_RLAlgorithm):
             state_dim=self._state_dim,
             action_dim=self._action_dim,
             learning_rate=self._lr_q,
-            latent_dim=64,
+            latent_dim=128,
         )
         self._q2 = QNet(
             state_dim=self._state_dim,
             action_dim=self._action_dim,
             learning_rate=self._lr_q,
-            latent_dim=64,
+            latent_dim=128,
         )
         self._q1_target = QNet(
             state_dim=self._state_dim,
             action_dim=self._action_dim,
             learning_rate=self._lr_q,
-            latent_dim=64,
+            latent_dim=128,
         )
         self._q2_target = QNet(
             state_dim=self._state_dim,
             action_dim=self._action_dim,
             learning_rate=self._lr_q,
-            latent_dim=64,
+            latent_dim=128,
         )
 
         self._q1_target.load_state_dict(self._q1.state_dict().copy())

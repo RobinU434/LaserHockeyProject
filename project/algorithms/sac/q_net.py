@@ -1,3 +1,4 @@
+
 from typing import Tuple
 import torch
 import torch.nn.functional as F
@@ -19,21 +20,21 @@ class QNet(nn.Module):
         self.action_head = FeedForwardNetwork(
             action_dim,
             latent_dim,
-            architecture=[],
+            architecture=[128],
             activation_function="ReLU",
             final_activation="ReLU",
         )
         self.state_head = FeedForwardNetwork(
             state_dim,
             latent_dim,
-            architecture=[],
+            architecture=[128],
             activation_function="ReLU",
             final_activation="ReLU",
         )
         self.latent_mlp = FeedForwardNetwork(
             2 * latent_dim,
             1,
-            architecture=[32],
+            architecture=[64, 32],
             activation_function="ReLU",
             final_activation=None,
         )
