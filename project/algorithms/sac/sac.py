@@ -328,8 +328,8 @@ class SAC(_RLAlgorithm):
                 "hparams": vars(self.hparams),
                 "action_dim": self._action_dim,
                 "state_dim": self._state_dim,
-                "action_scale": self._action_scale,
-                "action_bias": self._action_bias,
+                "action_scale": self._action_scale.numpy(),
+                "action_bias": self._action_bias.numpy(),
             },
             path,
         )

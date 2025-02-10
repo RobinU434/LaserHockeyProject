@@ -40,8 +40,9 @@ class PlaceHolderEnv(Env):
 
         lower_bound = action_bias - action_scale / 2
         upper_bound = action_bias + action_scale / 2
-        self.observation_space = Box(lower_bound, upper_bound, shape=(state_dim,))
-        self.action_space = Box(-1, 1, shape=(action_dim,))
+        self.action_space = Box(lower_bound, upper_bound, shape=(action_dim,))
+        
+        self.observation_space = Box(-1, 1, shape=(state_dim,))
 
 
 def generate_separator(content: str, width: int, fill_char: str = "="):
