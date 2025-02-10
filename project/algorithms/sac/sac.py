@@ -302,6 +302,9 @@ class SAC(_RLAlgorithm):
             ):
                 self.evaluate(episode_idx + 1)
 
+            # save metrics every run
+            self.save_metrics()
+
         # store metrics in a csv file
         self.save_metrics()
         self.save_checkpoint(n_episodes)
