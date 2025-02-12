@@ -5,9 +5,9 @@ import torch.nn.functional as F
 from torch import Tensor, nn, optim
 
 from project.algorithms.common.network import FeedForwardNetwork
+from project.algorithms.common.q_net import VectorizedQNet
 
-
-class QNet(nn.Module):
+class QNet(VectorizedQNet):
     def __init__(
         self,
         state_dim: int,
@@ -15,40 +15,9 @@ class QNet(nn.Module):
         latent_dim: int = 128,
         learning_rate: float = 1e-3,
     ):
-        super(QNet, self).__init__()
-
-        self.action_head = FeedForwardNetwork(
-            action_dim,
-            latent_dim,
-            architecture=[128],
-            activation_function="ReLU",
-            final_activation="ReLU",
-        )
-        self.state_head = FeedForwardNetwork(
-            state_dim,
-            latent_dim,
-            architecture=[128],
-            activation_function="ReLU",
-            final_activation="ReLU",
-        )
-        self.latent_mlp = FeedForwardNetwork(
-            2 * latent_dim,
-            1,
-            architecture=[64, 32],
-            activation_function="ReLU",
-            final_activation=None,
-        )
+        super().__init__(state_dim, action_dim, latent_dim, [128], [128], [64, 32])
         self.optimizer = optim.AdamW(self.parameters(), lr=learning_rate)
-        # self.criterion = nn.MSELoss()
-
-    def forward(self, s: Tensor, a: Tensor) -> Tensor:
-        h_state = self.state_head.forward(s)
-        h_action = self.action_head.forward(a)
-
-        latent = torch.cat([h_state, h_action], dim=1)
-        q = self.latent_mlp.forward(latent)
-        return q
-
+        
     def train_net(
         self, target: Tensor, mini_batch: Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
     ) -> Tensor:
@@ -61,7 +30,3 @@ class QNet(nn.Module):
         self.optimizer.step()
 
         return loss
-
-    def soft_update(self, net_target: nn.Module, tau: float):
-        for param_target, param in zip(net_target.parameters(), self.parameters()):
-            param_target.data.copy_(param_target.data * (1.0 - tau) + param.data * tau)
