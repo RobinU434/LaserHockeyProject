@@ -278,12 +278,17 @@ class SAC(_RLAlgorithm):
         self.log_scalar("sac/alpha_loss", alpha_losses, episode_idx)
         self.log_scalar("sac/alpha", alpha, episode_idx)
 
-    def train(self, n_episodes: int = 1000):
+    def train(self, n_episodes = 1000, verbose = False):
         if isinstance(self._env, PlaceHolderEnv):
             raise ValueError(
                 "Training with PlaceHolderEnv is not possible. Please update internal environment."
             )
-        for episode_idx in tqdm(range(n_episodes), desc="train sac", unit="episodes"):
+        
+        iterator = range(n_episodes)
+        if verbose:
+            iterator = tqdm(iterator, desc="train sac", unit="episodes")
+        
+        for episode_idx in iterator:
             self.collect_episode(episode_idx)
 
             if len(self._memory) >= self._start_buffer_size:
