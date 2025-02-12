@@ -1,3 +1,4 @@
+from ast import Dict
 import inspect
 from abc import ABC, abstractmethod
 from argparse import Namespace
@@ -80,6 +81,11 @@ class _RLAlgorithm(ABC):
         for logger in self._logger:
             logger.log_scalar(name, value, episode + self.episode_offset)
 
+    def log_dict(self, d: Dict[str, float], episode: int, prefix: int):
+        for logger in self._logger:
+            logger.log_dict(d, episode + self.episode_offset, prefix)
+
+
     def save_metrics(self):
         for logger in self._logger:
             logger.save()
@@ -125,14 +131,19 @@ class _RLAlgorithm(ABC):
 
         return sac
 
+    def get_name(self) -> str:
+        return type(self).__name__
+
     @abstractmethod
     def load_checkpoint(self, checkpoint: str | Path):
         raise NotImplementedError
 
     @abstractmethod
-    def train(self, n_episodes: int):
+    def train(self, n_episodes: int, verbose: bool = False):
         raise NotImplementedError
 
     @abstractmethod
     def get_agent(self, deterministic: bool = True) -> _Agent:
         raise NotImplementedError
+
+
