@@ -10,7 +10,7 @@ class QNet(DiscreteQNet):
         self,
         state_dim,
         n_actions,
-        architecture=...,
+        architecture=[],
         activation_function="ReLU",
         lr: float = 1e-4,
         *args,
@@ -27,9 +27,15 @@ class QNet(DiscreteQNet):
         self, mini_batch: Tuple[Tensor, Tensor, Tensor, Tensor, Tensor], target: Tensor
     ) -> Dict[str, float]:
         state, action, _, _, _ = mini_batch
-        prediction = self.forward(state)[:, action]
-
-        loss = self.criterion.forward(prediction, target)
+        
+        action = action.int()
+        if action.shape[1] == 1:
+            action = action[:, 0]
+        
+        prediction = self.forward(state)
+        prediction = prediction[torch.arange(len(action)), action]
+        
+        loss = self.criterion.forward(prediction, target[:, 0])
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()

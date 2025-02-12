@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Tuple
 from torch import Tensor, nn
 import torch
 from project.algorithms.common.network import FeedForwardNetwork
-
+from torch.nn import Sequential, Softmax
 
 class EnvModel(nn.Module):
     def __init__(
@@ -31,9 +31,9 @@ class EnvModel(nn.Module):
             latent_dim, state_dim, architecture=[128]
         )
         self._reward_pred = FeedForwardNetwork(latent_dim, 1, architecture=[128])
-        self._done_pred = FeedForwardNetwork(
-            latent_dim, 1, architecture=[128], final_activation="Softmax"
-        )
+        self._done_pred = Sequential(FeedForwardNetwork(
+            latent_dim, 1, architecture=[128]
+        ), Softmax(dim=-1))
 
         self.mse = nn.MSELoss()
         self.bce = nn.BCELoss()

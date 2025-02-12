@@ -12,13 +12,13 @@ from project.algorithms.dyna.env_model import EnvModel
 from project.algorithms.dyna.q_net import QNet
 from project.algorithms.utils import PlaceHolderEnv, get_space_dim
 from gymnasium.spaces import Discrete
-
+from torch import Tensor
 
 class DynaQ(_RLAlgorithm):
     def __init__(
         self,
         env,
-        logger=...,
+        logger=[],
         eval_env=None,
         eval_check_interval=None,
         save_interval=None,
@@ -29,7 +29,7 @@ class DynaQ(_RLAlgorithm):
         epsilon_decay: float = 0.99,  # decay epsilon greedy policy
         gamma: float = 0.99,  # discount factor 
         tau: float = 0.01,  # soft update parameter
-        simulation_updates: int = 50,
+        simulation_updates: int = 2,
         *args,
         **kwargs,
     ):
@@ -65,31 +65,34 @@ class DynaQ(_RLAlgorithm):
 
         # note n_actions = action dim because of one hot encoding -> easiest encoding but others are possible
         self.world_model = EnvModel(self._state_dim, self._n_actions)
-        self.replay_buffer = ReplayBuffer(self._buffer_limit)
+        self.memory = ReplayBuffer(self._buffer_limit)
 
         self.total_steps: int
 
     def _get_epsilon(self, total_steps: int):
-        return math.exp(self._epsilon_decay * total_steps)
+        return math.exp(-self._epsilon_decay * total_steps)
 
-    def encode_action(self, action: int | np.ndarray | torch.Tensor) -> torch.Tensor:
+    def encode_action(self, action: int | Tensor) -> Tensor:
         """converts the discrete action into an action encoding
 
         Args:
-            action (int | | np.ndarray | torch.Tensor): discrete action. if iterable: (batch_size, ) and dtype = int
+            action (int | Tensor): discrete action. if iterable: (batch_size, ) and dtype = int
 
         Returns:
-            torch.Tensor: action encoding of with a specific action dimension
+            Tensor: action encoding of with a specific action dimension
         """
         # NOTE: only one hot
         if isinstance(action, int):
             a = torch.zeros(self._n_actions)
             a[action] = 1
+            a = a.float()
             return a
-
+        
+        action = action.int()
         batch_size = len(action)
-        a = torch.zeros(batch_size, self._n_actions)
-        a[torch.arange(batch_size), action] = 1
+        a = torch.zeros(batch_size, self._n_actions, dtype=float)
+        a[torch.arange(batch_size, dtype=int), action] = 1
+        a = a.float()
         return a
 
     def get_action(self, state: np.ndarray) -> Tuple[int, float]:
@@ -110,13 +113,13 @@ class DynaQ(_RLAlgorithm):
             return action, log_prob
         
         action = np.random.randint(0, self._n_actions)
-        log_prob = -math.exp(self._n_actions)
+        log_prob = -math.log(self._n_actions)
         return action, log_prob
 
     def simulation_training(self, episode_idx: int):
         metrics = []
         for _ in range(self._simulation_updates):
-            state, action, _, _, _ = self.replay_buffer.sample(self._batch_size)
+            state, action, _, _, _ = self.memory.sample(self._batch_size)
 
             action_enc = self.encode_action(action)
             with torch.no_grad():
@@ -131,10 +134,10 @@ class DynaQ(_RLAlgorithm):
         metrics = pd.DataFrame(metrics).mean().to_dict()
         self.log_dict(metrics, episode_idx, prefix=self.get_name() + "/sim_")
 
-    def update_env_model(
+    def update_world_model(
         self,
         mini_batch: Tuple[
-            torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+            Tensor, Tensor, Tensor, Tensor, Tensor
         ],
         episode_idx: int,
     ):
@@ -146,20 +149,22 @@ class DynaQ(_RLAlgorithm):
     def calculate_target(
         self,
         mini_batch: Tuple[
-            torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+            Tensor, Tensor, Tensor, Tensor, Tensor
         ],
     ):
         _, _, next_state, reward, done = mini_batch
         with torch.no_grad():
             q_next = self.q_target.forward(next_state)
-            q_next_max = torch.max(q_next, dim=1, keepdim=True)
+            q_next_max = torch.max(q_next, dim=-1, keepdim=True)[0]
+
+        # print(reward, self._gamma, q_next_max, done)
         q_target = reward + self._gamma * q_next_max * (1 - done)
         return q_target
 
     def update_q(
         self,
         mini_batch: Tuple[
-            torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+            Tensor, Tensor, Tensor, Tensor, Tensor
         ],
         episode_idx: int,
     ):
@@ -191,17 +196,23 @@ class DynaQ(_RLAlgorithm):
             truncated = False
             state, _ = self._env.reset()
             while not (done or truncated):
-                action, log_prob = self.get_action(state)
+                action, log_prob = self.get_action(torch.from_numpy(state))
                 next_state, reward, done, truncated, _ = self._env.step(action)
 
-                self.replay_buffer.put(state, action, next_state, reward, done)
+                self.memory.put(
+                    observation=torch.from_numpy(state),
+                    action=torch.tensor([action], dtype=int),
+                    next_observation=torch.from_numpy(next_state),
+                    reward=torch.tensor([reward]),
+                    done=torch.tensor([done], dtype=float),
+                    sampling_weight=None,
+                )
 
-                if len(self.replay_buffer) > self._start_buffer_size:
-                    mini_batch = self.replay_buffer.sample(self._batch_size)
-                    self.update_env_model(mini_batch, episode_idx)
+                if len(self.memory) > self._start_buffer_size:
+                    mini_batch = self.memory.sample(self._batch_size)
+                    self.update_world_model(mini_batch, episode_idx)
                     self.update_q(mini_batch, episode_idx)
-
-                self.simulation_training(episode_idx)
+                    self.simulation_training(episode_idx)
                 
                 score += reward
                 episode_steps += 1
