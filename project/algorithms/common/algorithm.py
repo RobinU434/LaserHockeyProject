@@ -1,9 +1,8 @@
-from ast import Dict
 import inspect
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 import torch
 from gymnasium import Env
