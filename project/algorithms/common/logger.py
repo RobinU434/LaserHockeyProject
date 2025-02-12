@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Dict
 
 import pandas as pd
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -10,6 +11,10 @@ class _Logger(ABC):
         super().__init__()
 
         self._log_dir = log_dir if isinstance(log_dir, Path) else Path(log_dir)
+
+    def log_dict(self, d: Dict[str, float], step: int, prefix: str = ""):
+        for key, value in d.items():
+            self.log_scalar(prefix + key, value, step)
 
     @abstractmethod
     def log_scalar(self, name: str, value: float, step: int):
