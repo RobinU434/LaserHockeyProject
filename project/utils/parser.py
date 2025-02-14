@@ -58,6 +58,14 @@ def add_train_sac_gym_args(parser: ArgumentParser) -> ArgumentParser:
         default=200,
         required=False,
     )
+    parser.add_argument(
+        "--device",
+        help="--no-documentation-exists--",
+        dest="device",
+        type=str,
+        default="cpu",
+        required=False,
+    )
     return parser
 
 
@@ -70,6 +78,14 @@ def add_train_sac_hockey_args(parser: ArgumentParser) -> ArgumentParser:
         help="--no-documentation-exists--",
         dest="force",
         action="store_true",
+        required=False,
+    )
+    parser.add_argument(
+        "--device",
+        help="--no-documentation-exists--",
+        dest="device",
+        type=str,
+        default="cpu",
         required=False,
     )
     return parser

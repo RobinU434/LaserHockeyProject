@@ -23,6 +23,7 @@ from project.algorithms.utils import (
     generate_separator,
     get_min_q,
     get_space_dim,
+    state_dict_to_cpu,
 )
 
 
@@ -144,7 +145,6 @@ class SAC(_RLAlgorithm):
             else torch.from_numpy(self._action_bias)
         )
 
-        
         self._pi = PolicyNet(
             input_dim=self._state_dim,
             output_dim=self._action_dim,
@@ -179,12 +179,17 @@ class SAC(_RLAlgorithm):
             Tensor: td target (batch_size,)
         """
         _, _, s_prime, r, done = mini_batch
+        s_prime = s_prime.to(self._device)
+
         with torch.no_grad():
             a_prime, log_prob = self._pi.forward(s_prime)
             entropy = -self._pi.log_alpha.exp().detach() * log_prob
 
             min_q = get_min_q(self._q1_target, self._q2_target, s_prime, a_prime)
+            min_q = min_q.cpu()
+            entropy = entropy.cpu()
             target = r + self._gamma * (1 - done) * (min_q + entropy)
+
         return target
 
     def collect_episode(self, episode_idx: int):
@@ -196,20 +201,22 @@ class SAC(_RLAlgorithm):
         done = False
         truncated = False
         while not (done or truncated):
-            s_input = torch.from_numpy(s).float()
+            s_input = torch.from_numpy(s).float().to(self._device)
             # introduce batch size 1
             a, log_prob = self._pi.forward(s_input[None])
+            a = a.cpu()
+            log_prob = log_prob.cpu()
 
             # detach grad from action to apply it to the environment where it is converted into a numpy.ndarray
             a = a.detach()[0]
             s_prime, r, done, truncated, _ = self._env.step(a.numpy())
             score += r
 
-            # NOTE: this is experimental    
+            # NOTE: this is experimental
             # r = math.tanh(r * 0.5)
 
             sampling_weight = None
-            # compute experience replay weight as the td error  
+            # compute experience replay weight as the td error
             if self._experience_replay:
                 with torch.no_grad():
                     minibatch = (
@@ -220,7 +227,9 @@ class SAC(_RLAlgorithm):
                         torch.tensor([done], dtype=float)[None],
                     )
                     target = self.calc_target(minibatch)
-                    q_pred = get_min_q(self._q1, self._q2, torch.from_numpy(s)[None], a[None])
+                    q_pred = get_min_q(
+                        self._q1, self._q2, torch.from_numpy(s)[None], a[None]
+                    )
                     sampling_weight = F.smooth_l1_loss(q_pred, target).mean()
                     sampling_weight = sampling_weight.item()
 
@@ -278,16 +287,16 @@ class SAC(_RLAlgorithm):
         self.log_scalar("sac/alpha_loss", alpha_losses, episode_idx)
         self.log_scalar("sac/alpha", alpha, episode_idx)
 
-    def train(self, n_episodes = 1000, verbose = False):
+    def train(self, n_episodes=1000, verbose=False):
         if isinstance(self._env, PlaceHolderEnv):
             raise ValueError(
                 "Training with PlaceHolderEnv is not possible. Please update internal environment."
             )
-        
+
         iterator = range(n_episodes)
         if verbose:
             iterator = tqdm(iterator, desc="train sac", unit="episodes")
-        
+
         for episode_idx in iterator:
             self.collect_episode(episode_idx)
 
@@ -323,16 +332,30 @@ class SAC(_RLAlgorithm):
         torch.save(
             {
                 "epoch": episode_idx,
-                "pi_model_state_dict": self._pi.state_dict(),
-                "pi_optimizer_state_dict": self._pi.optimizer.state_dict(),
-                "q1_model_state_dict": self._q1.state_dict(),
-                "q1_optimizer_state_dict": self._q1.optimizer.state_dict(),
-                "q2_model_state_dict": self._q2.state_dict(),
-                "q2_optimizer_state_dict": self._q2.optimizer.state_dict(),
-                "q1_target_model_state_dict": self._q1_target.state_dict(),
-                "q1_target_optimizer_state_dict": self._q1_target.optimizer.state_dict(),
-                "q2_target_model_state_dict": self._q2_target.state_dict(),
-                "q2_target_optimizer_state_dict": self._q2_target.optimizer.state_dict(),
+                "pi_model_state_dict": state_dict_to_cpu(self._pi.state_dict()),
+                "pi_optimizer_state_dict": state_dict_to_cpu(
+                    self._pi.optimizer.state_dict()
+                ),
+                "q1_model_state_dict": state_dict_to_cpu(self._q1.state_dict()),
+                "q1_optimizer_state_dict": state_dict_to_cpu(
+                    self._q1.optimizer.state_dict()
+                ),
+                "q2_model_state_dict": state_dict_to_cpu(self._q2.state_dict()),
+                "q2_optimizer_state_dict": state_dict_to_cpu(
+                    self._q2.optimizer.state_dict()
+                ),
+                "q1_target_model_state_dict": state_dict_to_cpu(
+                    self._q1_target.state_dict()
+                ),
+                "q1_target_optimizer_state_dict": state_dict_to_cpu(
+                    self._q1_target.optimizer.state_dict()
+                ),
+                "q2_target_model_state_dict": state_dict_to_cpu(
+                    self._q2_target.state_dict()
+                ),
+                "q2_target_optimizer_state_dict": state_dict_to_cpu(
+                    self._q2_target.optimizer.state_dict()
+                ),
                 "hparams": vars(self.hparams),
                 "action_dim": self._action_dim,
                 "state_dim": self._state_dim,
@@ -343,7 +366,7 @@ class SAC(_RLAlgorithm):
         )
 
     def load_checkpoint(self, checkpoint):
-        checkpoint = torch.load(checkpoint, weights_only=False  )
+        checkpoint = torch.load(checkpoint, weights_only=False)
         self._pi.load_state_dict(checkpoint["pi_model_state_dict"])
         self._pi.optimizer.load_state_dict(checkpoint["pi_optimizer_state_dict"])
         self._q1.load_state_dict(checkpoint["q1_model_state_dict"])
@@ -362,6 +385,14 @@ class SAC(_RLAlgorithm):
     def get_agent(self, deterministic: bool = False) -> _Agent:
         return SACAgent(deepcopy(self._pi), deterministic)
 
+    def to(self, device):
+        super().to(device)
+        self._q1.to(self._device)
+        self._q2.to(self._device)
+        self._q1_target.to(self._device)
+        self._q2_target.to(self._device)
+        self._pi.to(self._device)
+
     def __repr__(self):
         s1 = generate_separator("Policy", 80)
         s2 = generate_separator("Q-Function", 80)
@@ -372,12 +403,18 @@ class SAC(_RLAlgorithm):
 
 
 class SACAgent(_Agent):
-    def __init__(self, policy: PolicyNet, deterministic: bool = False):
+    def __init__(
+        self,
+        policy: PolicyNet,
+        deterministic: bool = False,
+        device: torch.device = torch.device("cpu"),
+    ):
         super().__init__()
         self._policy = policy
         self._mode = deterministic
+        self._device = device
 
     def act(self, state):
-        state = torch.from_numpy(state).float()
+        state = torch.from_numpy(state).float().to(self._device)
         action, _ = self._policy.forward(state[None], mode=self._mode)
-        return action.detach().numpy()[0]
+        return action.detach().cpu().numpy()[0]

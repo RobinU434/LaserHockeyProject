@@ -43,6 +43,7 @@ class _RLAlgorithm(ABC):
 
         self.hparams = Namespace()
         self.episode_offset = 0
+        self._device = torch.device("cpu")
 
     def save_hyperparmeters(self, *args):
         # Get the frame of the calling function (i.e., the __init__ method)
@@ -83,7 +84,6 @@ class _RLAlgorithm(ABC):
     def log_dict(self, d: Dict[str, float], episode: int, prefix: int):
         for logger in self._logger:
             logger.log_dict(d, episode + self.episode_offset, prefix)
-
 
     def save_metrics(self):
         for logger in self._logger:
@@ -134,6 +134,12 @@ class _RLAlgorithm(ABC):
         return type(self).__name__
 
     @abstractmethod
+    def to(self, device: torch.device):
+        if isinstance(device, str):
+            device = torch.device(device)
+        self._device = device
+
+    @abstractmethod
     def load_checkpoint(self, checkpoint: str | Path):
         raise NotImplementedError
 
@@ -144,5 +150,3 @@ class _RLAlgorithm(ABC):
     @abstractmethod
     def get_agent(self, deterministic: bool = True) -> _Agent:
         raise NotImplementedError
-
-

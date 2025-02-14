@@ -20,10 +20,12 @@ class Entrypoint:
         train_sb3_sac()
 
     @add_hydra("config", None, config_path="config", config_name="train_sac.yaml")
-    def train_sac_hockey(self, config: DictConfig, force: bool = False):
+    def train_sac_hockey(
+        self, config: DictConfig, force: bool = False, device: str = "cpu"
+    ):
         from project.scripts.train import train_sac
 
-        train_sac(config, force)
+        train_sac(config, force, device)
 
     @add_hydra("config", None, config_path="config", config_name="train_sac.yaml")
     def train_sac_gym(
@@ -32,10 +34,11 @@ class Entrypoint:
         gym_env: str,
         force: bool = False,
         max_steps: int = 200,
+        device: str = "cpu",
     ):
         from project.scripts.train import train_sac_gym_env
 
-        train_sac_gym_env(config, force, gym_env, max_steps)
+        train_sac_gym_env(config, force, gym_env, max_steps, device)
 
     def render_sac_gym(
         self,

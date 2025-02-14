@@ -18,6 +18,7 @@ from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
 from project.environment.single_player_env import SinglePlayerHockeyEnv
 from project.utils.configs.train_sac_config import Config as SACConfig
 from gymnasium.wrappers import NormalizeReward
+
 # from project.environment.hockey_env.hdf5_replay_buffer import HDF5ReplayBuffer
 
 
@@ -38,7 +39,7 @@ def train_sb3_sac():
     model.learn(100)
 
 
-def train_sac(config: DictConfig, force: bool = False):
+def train_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
     config: SACConfig = SACConfig.from_dict_config(config)
     # build envs (train, eval env)
     train_env = SinglePlayerHockeyEnv(**config.SelfPlay.Env.to_container())
@@ -59,6 +60,7 @@ def train_sac(config: DictConfig, force: bool = False):
         log_dir=log_dir,
         **config.SAC.to_container(),
     )
+    sac = sac.to(device)
 
     # build trainer
     checkpoint_schedule = ExponentialSampler(
@@ -108,6 +110,7 @@ def train_sac_gym_env(
     force: bool,
     gym_env: str,
     max_steps: int = 200,
+    device: str = "cpu",
 ):
     config: SACConfig = SACConfig.from_dict_config(config)
     # build envs (train, eval env)
@@ -118,7 +121,7 @@ def train_sac_gym_env(
         )
     # train_env = TanhWrapper(train_env, 1000)
     train_env = SymLogWrapper(train_env)
-        
+
     print("Train on environment: ", gym_env)
     action_space: Box = train_env.action_space
     config.SAC.action_scale = action_space.high - action_space.low
@@ -136,6 +139,7 @@ def train_sac_gym_env(
         log_dir=log_dir,
         **config.SAC.to_container(),
     )
+    sac = sac.to(device)
     print(sac)
 
     if not force:

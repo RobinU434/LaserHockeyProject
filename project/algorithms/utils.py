@@ -1,3 +1,4 @@
+from typing import Dict
 from gymnasium import Env, Space
 from gymnasium.spaces import Box
 import torch
@@ -41,7 +42,7 @@ class PlaceHolderEnv(Env):
         lower_bound = action_bias - action_scale / 2
         upper_bound = action_bias + action_scale / 2
         self.action_space = Box(lower_bound, upper_bound, shape=(action_dim,))
-        
+
         self.observation_space = Box(-1, 1, shape=(state_dim,))
 
 
@@ -57,7 +58,7 @@ def generate_separator(content: str, width: int, fill_char: str = "="):
 
 
 def get_min_q(q1: nn.Module, q2: nn.Module, s: Tensor, a: Tensor) -> Tensor:
-    """get minimal q-value between two q networks 
+    """get minimal q-value between two q networks
 
     Args:
         q1 (nn.Module): _description_
@@ -66,10 +67,24 @@ def get_min_q(q1: nn.Module, q2: nn.Module, s: Tensor, a: Tensor) -> Tensor:
         a (Tensor): (batch_dim, action_dim)
 
     Returns:
-        Tensor: min q value for each sample 
+        Tensor: min q value for each sample
     """
     q1_val = q1.forward(s, a)
     q2_val = q2.forward(s, a)
     q1_q2 = torch.cat([q1_val, q2_val], dim=1)
     min_q = torch.min(q1_q2, 1, keepdim=True)[0]
     return min_q
+
+
+def state_dict_to(
+    state_dict: Dict[str, Tensor], device: torch.device
+) -> Dict[str, Tensor]:
+    return {k: v.to(device) for k, v in state_dict.items()}
+
+
+def state_dict_to_cpu(state_dict: Dict[str, Tensor]) -> Dict[str, Tensor]:
+    return {k: v.cpu() for k, v in state_dict.items()}
+
+
+def state_dict_to_cuda(state_dict: Dict[str, Tensor]) -> Dict[str, Tensor]:
+    return {k: v.cuda() for k, v in state_dict.items()}
