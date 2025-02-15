@@ -37,7 +37,7 @@ class Entrypoint:
         device: str = "cpu",
     ):
         from project.scripts.train import train_sac_gym_env
-
+    
         train_sac_gym_env(config, force, gym_env, max_steps, device)
 
     def render_sac_gym(

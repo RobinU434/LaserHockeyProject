@@ -51,6 +51,6 @@ class CSVLogger(_Logger):
         df = pd.DataFrame(self._data)
         df = self._squeeze_dataframe(df, "step")
         df.to_csv(self._log_dir / "train_logs.csv")
-    
+
     def _squeeze_dataframe(self, df: pd.DataFrame, index: str = "step"):
         return df.groupby(index).first().reset_index()

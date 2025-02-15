@@ -17,7 +17,7 @@ def render_sac(
             "LunarLander-v3",
             continuous=True,
             max_episode_steps=max_steps,
-            render_mode ="human", 
+            render_mode="human",
         )
 
     sac = SAC.from_checkpoint(checkpoint, env)
