@@ -1,5 +1,5 @@
-from copy import deepcopy
 import math
+from copy import deepcopy
 from pathlib import Path
 from typing import List, Tuple
 
@@ -14,17 +14,13 @@ from tqdm import tqdm
 from project.algorithms.common.agent import _Agent
 from project.algorithms.common.algorithm import _RLAlgorithm
 from project.algorithms.common.buffer import ReplayBuffer, _ReplayBuffer
-
 # from project.algorithms.sac.buffer import ReplayBuffer
 from project.algorithms.sac.policy_net import PolicyNet
 from project.algorithms.sac.q_net import QNet
-from project.algorithms.utils import (
-    PlaceHolderEnv,
-    generate_separator,
-    get_min_q,
-    get_space_dim,
-    state_dict_to_cpu,
-)
+from project.algorithms.sac.utils import get_min_q
+from project.algorithms.utils.gym_helper import PlaceHolderEnv, get_space_dim
+from project.algorithms.utils.str_ops import generate_separator
+from project.algorithms.utils.torch_ops import state_dict_to_cpu
 
 
 class SAC(_RLAlgorithm):
@@ -180,14 +176,14 @@ class SAC(_RLAlgorithm):
         """
         _, _, s_prime, r, done = mini_batch
         s_prime = s_prime.to(self._device)
+        r = r.to(self._device)
+        done = done.to(self._device)
 
         with torch.no_grad():
             a_prime, log_prob = self._pi.forward(s_prime)
             entropy = -self._pi.log_alpha.exp().detach() * log_prob
 
             min_q = get_min_q(self._q1_target, self._q2_target, s_prime, a_prime)
-            min_q = min_q.cpu()
-            entropy = entropy.cpu()
             target = r + self._gamma * (1 - done) * (min_q + entropy)
 
         return target
@@ -228,10 +224,13 @@ class SAC(_RLAlgorithm):
                     )
                     target = self.calc_target(minibatch)
                     q_pred = get_min_q(
-                        self._q1, self._q2, torch.from_numpy(s)[None], a[None]
+                        self._q1,
+                        self._q2,
+                        torch.from_numpy(s)[None].to(self._device),
+                        a[None],
                     )
                     sampling_weight = F.smooth_l1_loss(q_pred, target).mean()
-                    sampling_weight = sampling_weight.item()
+                    sampling_weight = sampling_weight.cpu().item()
 
             self._memory.put(
                 observation=torch.from_numpy(s),
@@ -384,14 +383,6 @@ class SAC(_RLAlgorithm):
 
     def get_agent(self, deterministic: bool = False) -> _Agent:
         return SACAgent(deepcopy(self._pi), deterministic)
-
-    def to(self, device):
-        super().to(device)
-        self._q1.to(self._device)
-        self._q2.to(self._device)
-        self._q1_target.to(self._device)
-        self._q2_target.to(self._device)
-        self._pi.to(self._device)
 
     def __repr__(self):
         s1 = generate_separator("Policy", 80)

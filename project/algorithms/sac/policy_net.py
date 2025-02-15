@@ -8,20 +8,21 @@ from torch.distributions import Beta as _Beta
 
 from project.algorithms.sac.actor import Actor
 from project.algorithms.sac.q_net import QNet
-from project.algorithms.utils import get_min_q
+from project.algorithms.sac.utils import get_min_q
+
 
 class Beta(_Beta):
     @classmethod
     def from_stats(cls, loc: Tensor, scale: Tensor) -> "Beta":
-        loc = torch.sigmoid(loc) # has to be between 0 and 1
+        loc = torch.sigmoid(loc)  # has to be between 0 and 1
         alpha = ((1 - loc) / (scale * scale) - 1 / loc) * loc * loc
-        beta  = alpha * (1 / loc - 1)
+        beta = alpha * (1 / loc - 1)
         return cls(alpha, beta)
-    
-    def rsample(self, sample_shape = ...):
+
+    def rsample(self, sample_shape=...):
         sample = super().rsample(sample_shape)
         return sample
-    
+
     def squish(self, sample: Tensor) -> Tensor:
         """to interval: -1, 1
 
@@ -32,7 +33,7 @@ class Beta(_Beta):
             _type_: _description_
         """
         return sample * 2 - 1
-    
+
 
 class Normal(_Normal):
     def squish(self, sample: Tensor) -> Tensor:
@@ -45,6 +46,7 @@ class Normal(_Normal):
             _type_: _description_
         """
         return torch.tanh(sample)
+
 
 class PolicyNet(nn.Module):
     def __init__(
@@ -93,7 +95,7 @@ class PolicyNet(nn.Module):
         # distribution = Beta.from_stats(mu, std)
         action = distribution.rsample()
         log_prob: Tensor = distribution.log_prob(action)
-        action = action # transform into [-1, 1]
+        action = action  # transform into [-1, 1]
         # action = sample * std + mu
         # sum log prob
         # independence assumption between individual probabilities
