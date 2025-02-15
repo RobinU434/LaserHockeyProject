@@ -8,16 +8,25 @@ from project.algorithms.common.network import FeedForwardNetwork
 
 class _QNet(nn.Module):
     def soft_update(self, net_target: nn.Module, tau: float):
-        """update the given parameters with the parameters from the module 
+        """update the given parameters with the parameters from the module
 
         Args:
             net_target (nn.Module): parameters to update
             tau (float): update strength (value between 0 and 1)
         """
-        assert tau >= 0 and tau <= 1, f"tau has to be between 0 and 1, given value: {tau}"
+        assert (
+            tau >= 0 and tau <= 1
+        ), f"tau has to be between 0 and 1, given value: {tau}"
         for param_target, param in zip(net_target.parameters(), self.parameters()):
             param_target.data.copy_(param_target.data * (1.0 - tau) + param.data * tau)
 
+    def train_net(self, *args, **kwargs) -> Dict[str, float]:
+        """hosts logic to train the QNEet
+
+        Returns:
+            Dict[str, float]: information about the training stats
+        """
+        raise NotImplementedError
 
 class VectorizedQNet(_QNet):
     def __init__(
@@ -29,7 +38,7 @@ class VectorizedQNet(_QNet):
         state_head_architecture: List[int] = [128],
         latent_mlp_architecture: List[int] = [64, 32],
         *args,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
