@@ -5,11 +5,12 @@ from pathlib import Path
 from typing import List, Dict
 
 import torch
+from torch import nn
 from gymnasium import Env
 
 from project.algorithms.common.agent import _Agent
 from project.algorithms.common.logger import _Logger
-from project.algorithms.utils import PlaceHolderEnv
+from project.algorithms.utils.gym_helper import PlaceHolderEnv
 from project.environment.evaluate_env import _EvalEnv
 
 
@@ -133,11 +134,16 @@ class _RLAlgorithm(ABC):
     def get_name(self) -> str:
         return type(self).__name__
 
-    @abstractmethod
     def to(self, device: torch.device):
         if isinstance(device, str):
             device = torch.device(device)
         self._device = device
+
+        # port nn.Modules to device
+        for value in self.__dict__.values():
+            if not isinstance(value, nn.Module):
+                continue
+            value.to(self._device)
 
     @abstractmethod
     def load_checkpoint(self, checkpoint: str | Path):
