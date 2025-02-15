@@ -64,20 +64,19 @@ class DiscreteActionWrapper(ActionWrapper):
             action (int): index of continuous action
 
         Returns:
-            np.ndarray: 
+            np.ndarray:
         """
         assert self.action_space.contains(
             action
         ), f"action: {action} not part of action space {self.action_space}"
-        return self.interpolation[[action]]
-    
+        return self.interpolation[action]
+
     def get_continuous_actions(self):
         return self.interpolation
 
 
-
 class MultiDiscreteActionWrapper(ActionWrapper):
-    def __init__(self, env, n_actions: int | np.ndarray):
+    def __init__(self, env, nvec: int | np.ndarray):
         super().__init__(env)
         assert isinstance(
             self.env.action_space, Box
@@ -89,19 +88,11 @@ class MultiDiscreteActionWrapper(ActionWrapper):
             self.env.action_space.shape[0] > 1
         ), "supports only one dimensional action space"
 
-        msg = "more than one action interpolation expected"
-        if isinstance(n_actions, int):
-            assert n_actions > 1, msg
-        else:
-            assert (n_actions > 1).all(), msg
-
+        assert (nvec > 1).all(), "more than one action interpolation expected"
+        assert nvec.shape == self.env.action_space.shape, "action space and nvec have to have the same shape"
         self.action_dim = self.env.action_space.shape[0]
 
-        if isinstance(n_actions, int):
-            n_vec = np.ones(self.action_dim) * n_actions
-        elif isinstance(n_actions, np.ndarray):
-            n_vec = n_actions
-        self.n_vec = n_vec
+        self.n_vec = nvec
 
         self.cont_lower = self.env.action_space.low
         self.cont_upper = self.env.action_space.high
@@ -109,7 +100,7 @@ class MultiDiscreteActionWrapper(ActionWrapper):
         self.action_space = MultiDiscrete(self.n_vec, seed=self.env.action_space.seed())
 
     def action(self, action: np.ndarray) -> np.ndarray:
-        """expect array of indices and returns the continuous version of it. 
+        """expect array of indices and returns the continuous version of it.
 
         Args:
             action (np.ndarray): ndarray of indices
@@ -122,7 +113,6 @@ class MultiDiscreteActionWrapper(ActionWrapper):
         ), f"action: {action} not part of action space {self.action_space}"
         continuous_action = self.cont_lower + action / (self.n_vec - 1) * self.span
         return continuous_action
-    
 
     def get_continuous_actions(self):
         res = [
@@ -130,6 +120,3 @@ class MultiDiscreteActionWrapper(ActionWrapper):
             for idx in range(self.action_dim)
         ]
         return res
-    
-    
-
