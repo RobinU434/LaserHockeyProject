@@ -13,7 +13,6 @@ from project.algorithms.common.agent import _Agent
 from project.algorithms.common.algorithm import _RLAlgorithm
 from project.algorithms.common.buffer import ReplayBuffer
 from project.algorithms.common.q_net import _QNet
-from project.algorithms.dyna.dyna import _DynaQ
 from project.algorithms.dyna.q_net import MultiDiscreteQNet, QNet
 from project.algorithms.dyna.world_model import WorldModel
 from project.algorithms.utils.encoding import multi_hot
@@ -22,7 +21,7 @@ from project.algorithms.utils.gym_helper import PlaceHolderEnv, get_space_dim
 
 class _DynaQ(_RLAlgorithm):
     def __init__(
-self,       
+        self,       
         env,
         logger=[],
         eval_env=None,
