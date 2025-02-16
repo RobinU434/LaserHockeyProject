@@ -3,6 +3,7 @@ from typing import Dict
 
 import pandas as pd
 from gymnasium import Env
+from tqdm import tqdm
 
 from project.algorithms.common.agent import _Agent
 from project.environment.hockey_env.hockey.hockey_env import Mode
@@ -37,6 +38,7 @@ class EvalHockeEnv(_EvalEnv):
     ):
         super().__init__()
         self.n_games = n_games  # how many games you want to play per opponent
+        self.verbose = verbose
 
         strong_opponent = EvalOpponent(weak=False, keep_mode=keep_mode, verbose=verbose)
         self.strong_env = SinglePlayerHockeyEnv(
@@ -95,6 +97,10 @@ class EvalHockeEnv(_EvalEnv):
             - (prefix)mean_length
         """
         results = []
+        iterator = range(self.n_games)
+        if self.verbose:
+            iterator = tqdm(iterator, desc="Evaluate", unit="game")
+        
         for _ in range(self.n_games):
             results.append(self._collect_rollout(player, env))
 
