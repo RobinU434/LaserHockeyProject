@@ -32,6 +32,7 @@ class _QNet(nn.Module):
         """
         raise NotImplementedError
 
+
 class VectorizedQNet(_QNet):
     def __init__(
         self,
@@ -91,7 +92,7 @@ class DiscreteQNet(_QNet):
         self.net = FeedForwardNetwork(
             state_dim, n_actions, architecture, activation_function
         )
-    
+
     def complete_forward(self, state: Tensor) -> Tensor:
         """evaluate at for every action
 
@@ -102,7 +103,7 @@ class DiscreteQNet(_QNet):
             Tensor: (batch_size, n_actions)
         """
         return self.net.forward(state)
-    
+
     def forward(self, state: Tensor, action: Tensor) -> Tensor:
         """evaluate at a certain action
 
@@ -116,7 +117,7 @@ class DiscreteQNet(_QNet):
 
         q_val = self.complete_forward(state)
         indices = torch.arange(len(q_val))
-        q_val = q_val[indices, action] 
+        q_val = q_val[indices, action]
         return q_val
 
     def action_probs(self, state: Tensor) -> Tensor:
@@ -223,7 +224,6 @@ class MultiDiscreteQNet(VectorizedQNet):
         """
         actions = self._encode_actions(actions)
         return super().forward(state, actions)
-        
 
     def mc_forward(self, state: Tensor, n_samples: int) -> Tuple[Tensor, Tensor]:
         """_summary_
@@ -233,7 +233,7 @@ class MultiDiscreteQNet(VectorizedQNet):
             n_samples (int): how many samples
 
         Returns:
-            Tuple[Tensor, Tensor]: 
+            Tuple[Tensor, Tensor]:
                 - q_val (batch_size, n_actions, 1)
                 - actions (batch_size, n_actions, action_dim)
         """
@@ -243,10 +243,10 @@ class MultiDiscreteQNet(VectorizedQNet):
         else:
             idx = np.random.choice(len(self._all_actions), size=(n_samples,))
             actions = self._all_actions[idx]
-        
+
         if len(state.shape) == 1:
             state = state[None]
-        
+
         return self.forward(state, actions), self._all_actions[idx]
 
     def complete_forward(self, state: Tensor) -> Tuple[Tensor, Tensor]:
@@ -256,7 +256,7 @@ class MultiDiscreteQNet(VectorizedQNet):
             state (Tensor): ((batch_size), state_dim) if no batch_size given assume 1
 
         Returns:
-            Tuple[Tensor, Tensor]: 
+            Tuple[Tensor, Tensor]:
                 - q_values: (batch_size, n_all_actions, 1)
                 - actions: (batch_size, n_all_actions, action_dim)
         """

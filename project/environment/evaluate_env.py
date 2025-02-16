@@ -28,7 +28,7 @@ class _EvalEnv(ABC):
         raise NotADirectoryError
 
 
-class EvalHockeEnv(_EvalEnv):
+class EvalHockeyEnv(_EvalEnv):
     def __init__(
         self,
         keep_mode=True,
@@ -100,7 +100,7 @@ class EvalHockeEnv(_EvalEnv):
         iterator = range(self.n_games)
         if self.verbose:
             iterator = tqdm(iterator, desc="Evaluate", unit="game")
-        
+
         for _ in range(self.n_games):
             results.append(self._collect_rollout(player, env))
 

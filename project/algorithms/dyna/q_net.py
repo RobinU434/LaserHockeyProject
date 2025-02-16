@@ -32,7 +32,7 @@ class QNet(DiscreteQNet):
         action = action.int()
         if action.shape[1] == 1:
             action = action[:, 0]
-        
+
         prediction = self.forward(state, action)
         # prediction = prediction[torch.arange(len(action)), action]
         loss = self.criterion.forward(prediction, target[:, 0])
@@ -53,7 +53,7 @@ class MultiDiscreteQNet(_MultiDiscreteQNet):
         state_head_architecture=[128],
         latent_mlp_architecture=[64, 32],
         memory_optimization=False,
-        lr: float =  1e-4,
+        lr: float = 1e-4,
         *args,
         **kwargs
     ):
@@ -80,7 +80,7 @@ class MultiDiscreteQNet(_MultiDiscreteQNet):
         action = action.int()
         if action.shape[1] == 1:
             action = action[:, 0]
-            
+
         # get only diagonal values because  of one to one relation
         prediction = self.one2one_forward(state, action)
         # print(prediction.shape, target.shape)

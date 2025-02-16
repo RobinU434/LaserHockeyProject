@@ -7,5 +7,3 @@ def generate_separator(content: str, width: int, fill_char: str = "="):
     content = fill_char * fill_len + content
     content = content + fill_char * (width - len(content))
     return content
-
-

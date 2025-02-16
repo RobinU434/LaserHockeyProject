@@ -7,7 +7,7 @@ def one_hot(x: torch.Tensor, n: int) -> torch.Tensor:
 
     Args:
         x (torch.Tensor): (batch_size, ) vector of indices
-        n (int): max index 
+        n (int): max index
 
     Returns:
         torch.Tensor: binary vector (batch_size, n)
@@ -19,13 +19,13 @@ def one_hot(x: torch.Tensor, n: int) -> torch.Tensor:
     res[torch.arange(batch_size, dtype=int), action] = 1
     res = res.float()
     return res
-        
+
 
 def multi_hot(x: torch.Tensor, nvec: torch.Tensor) -> torch.Tensor:
-    """multihot encoding. Same 
+    """multihot encoding. Same
 
     Args:
-        x (torch.Tensor): (batch_size, feature_dim) in index space 
+        x (torch.Tensor): (batch_size, feature_dim) in index space
         nvec (torch.Tensor): max indices per feature dim (feature_dim, )
 
     Returns:
@@ -35,10 +35,10 @@ def multi_hot(x: torch.Tensor, nvec: torch.Tensor) -> torch.Tensor:
     batch_size, _ = x.shape
     output_size = nvec.sum().item()
     output = torch.zeros((batch_size, output_size), dtype=torch.int64)
-    
+
     start_indices = torch.cumsum(torch.cat((torch.tensor([0]), nvec[:-1])), dim=0)
-    
+
     indices = start_indices.unsqueeze(0) + x
     output.scatter_(1, indices, 1)
-    
+
     return output

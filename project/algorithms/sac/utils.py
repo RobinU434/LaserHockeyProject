@@ -1,6 +1,7 @@
 import torch
 from torch import nn, Tensor
 
+
 def get_min_q(q1: nn.Module, q2: nn.Module, s: Tensor, a: Tensor) -> Tensor:
     """get minimal q-value between two q networks
 

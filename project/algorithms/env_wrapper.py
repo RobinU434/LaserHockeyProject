@@ -89,7 +89,9 @@ class MultiDiscreteActionWrapper(ActionWrapper):
         ), "supports only one dimensional action space"
 
         assert (nvec > 1).all(), "more than one action interpolation expected"
-        assert nvec.shape == self.env.action_space.shape, "action space and nvec have to have the same shape"
+        assert (
+            nvec.shape == self.env.action_space.shape
+        ), "action space and nvec have to have the same shape"
         self.action_dim = self.env.action_space.shape[0]
 
         self.n_vec = nvec

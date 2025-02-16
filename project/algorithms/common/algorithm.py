@@ -129,15 +129,9 @@ class _RLAlgorithm(ABC):
                 "action_bias": self._action_bias.numpy(),
             }
         elif isinstance(self._env.action_space, Discrete):
-            content = {
-                **content,
-                "n_actions": self._env.action_space.n
-            }
+            content = {**content, "n_actions": self._env.action_space.n}
         elif isinstance(self._env.action_space, MultiDiscrete):
-            content = {
-                **content,
-                "nvec": self._env.action_space.nvec
-            }
+            content = {**content, "nvec": self._env.action_space.nvec}
         return content
 
     @abstractmethod

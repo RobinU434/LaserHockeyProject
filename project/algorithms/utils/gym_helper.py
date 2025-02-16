@@ -37,7 +37,6 @@ class ContinuousPlaceHolderEnv(Env):
         self.observation_space = Box(-1, 1, shape=(state_dim,))
 
 
-
 class DiscretePlaceHolderEnv(Env):
     def __init__(self, state_dim: int, n_actions: int):
         super().__init__()
@@ -53,8 +52,11 @@ class MulitDiscretePlaceHolderEnv(Env):
         self.action_space = MultiDiscrete(nvec)
         self.observation_space = Box(-1, 1, shape=(state_dim,))
 
+
 def build_placeholder_env(ckpt_content: Dict[str, Any]) -> Env:
-    assert "action_space" in ckpt_content.keys(), "type of action space has to be defined"
+    assert (
+        "action_space" in ckpt_content.keys()
+    ), "type of action space has to be defined"
     action_space_name = ckpt_content["action_space"]
     if action_space_name == Box.__name__:
         env = ContinuousPlaceHolderEnv(
@@ -74,6 +76,8 @@ def build_placeholder_env(ckpt_content: Dict[str, Any]) -> Env:
             ckpt_content["nvec"],
         )
     else:
-        raise ValueError(f"No Placeholder env for action space name: {action_space_name}. You can use a predefined env to not create an env")
-    
+        raise ValueError(
+            f"No Placeholder env for action space name: {action_space_name}. You can use a predefined env to not create an env"
+        )
+
     return env

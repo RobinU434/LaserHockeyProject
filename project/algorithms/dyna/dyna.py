@@ -331,7 +331,9 @@ class DynaQ(_DynaQ, _DiscreteRLAlgorithm):
                 self.q_target.optimizer.state_dict()
             ),
             "world_model_state_dict": state_dict_to_cpu(self.world_model.state_dict()),
-            "world_model_optimizer_state_dict": state_dict_to_cpu(self.world_model.optimizer.state_dict())
+            "world_model_optimizer_state_dict": state_dict_to_cpu(
+                self.world_model.optimizer.state_dict()
+            ),
         }
         torch.save(content, path)
 
@@ -341,9 +343,13 @@ class DynaQ(_DynaQ, _DiscreteRLAlgorithm):
         self.q_net.load_state_dict(checkpoint["q_state_dict"])
         self.q_net.optimizer.load_state_dict(checkpoint["q_optimizer_state_dict"])
         self.q_target.load_state_dict(checkpoint["q_target_state_dict"])
-        self.q_target.optimizer.load_state_dict(checkpoint["q_target_optimizer_state_dict"])
+        self.q_target.optimizer.load_state_dict(
+            checkpoint["q_target_optimizer_state_dict"]
+        )
         self.world_model.load_state_dict(checkpoint["world_model_state_dict"])
-        self.world_model.optimizer.load_state_dict(checkpoint["world_model_optimizer_state_dict"])
+        self.world_model.optimizer.load_state_dict(
+            checkpoint["world_model_optimizer_state_dict"]
+        )
 
     def __repr__(self):
         s1 = generate_separator("Q-Function", 80)
@@ -352,7 +358,7 @@ class DynaQ(_DynaQ, _DiscreteRLAlgorithm):
         wm_str = str(self.world_model)
         s = "\n".join([s1, q_str, s2, wm_str])
         return s
-        
+
     def get_agent(self, deterministic=True):
         return DiscreteDynaQAgent(deepcopy(self.q_net), deterministic)
 
@@ -408,7 +414,6 @@ class MultiDiscreteDynaQ(_DynaQ, _MultiDiscreteRLAlgorithm):
         self._mc_sample = mc_sample
         self.save_hyperparmeters()
 
-        
         self._state_dim = get_space_dim(self._env.observation_space)  # noqa: F821
         action_space: MultiDiscrete = self._env.action_space
         self._action_dim = action_space.nvec.sum()
@@ -473,7 +478,7 @@ class MultiDiscreteDynaQ(_DynaQ, _MultiDiscreteRLAlgorithm):
     def save_checkpoint(self, episode_idx, path=None):
         path = get_save_path(self._log_dir, episode_idx, path)
         content = self.get_basic_save_args(episode_idx)
-        
+
         content = {
             **content,
             "q_state_dict": state_dict_to_cpu(self.q_net.state_dict()),
@@ -485,7 +490,9 @@ class MultiDiscreteDynaQ(_DynaQ, _MultiDiscreteRLAlgorithm):
                 self.q_target.optimizer.state_dict()
             ),
             "world_model_state_dict": state_dict_to_cpu(self.world_model.state_dict()),
-            "world_model_optimizer_state_dict": state_dict_to_cpu(self.world_model.optimizer.state_dict())
+            "world_model_optimizer_state_dict": state_dict_to_cpu(
+                self.world_model.optimizer.state_dict()
+            ),
         }
         torch.save(content, path)
 
@@ -495,9 +502,13 @@ class MultiDiscreteDynaQ(_DynaQ, _MultiDiscreteRLAlgorithm):
         self.q_net.load_state_dict(checkpoint["q_state_dict"])
         self.q_net.optimizer.load_state_dict(checkpoint["q_optimizer_state_dict"])
         self.q_target.load_state_dict(checkpoint["q_target_state_dict"])
-        self.q_target.optimizer.load_state_dict(checkpoint["q_target_optimizer_state_dict"])
+        self.q_target.optimizer.load_state_dict(
+            checkpoint["q_target_optimizer_state_dict"]
+        )
         self.world_model.load_state_dict(checkpoint["world_model_state_dict"])
-        self.world_model.optimizer.load_state_dict(checkpoint["world_model_optimizer_state_dict"])
+        self.world_model.optimizer.load_state_dict(
+            checkpoint["world_model_optimizer_state_dict"]
+        )
 
     def __repr__(self):
         s1 = generate_separator("Q-Function", 80)
@@ -506,10 +517,12 @@ class MultiDiscreteDynaQ(_DynaQ, _MultiDiscreteRLAlgorithm):
         wm_str = str(self.world_model)
         s = "\n".join([s1, q_str, s2, wm_str])
         return s
-        
 
     def get_agent(self, deterministic=True):
-        return MultiDiscreteDynaQAgent(deepcopy(self.q_net), deterministic, self._mc_sample)
+        return MultiDiscreteDynaQAgent(
+            deepcopy(self.q_net), deterministic, self._mc_sample
+        )
+
 
 class DiscreteDynaQAgent(_Agent):
     def __init__(self, q_net: QNet, deterministic: bool = False):
@@ -524,23 +537,28 @@ class DiscreteDynaQAgent(_Agent):
             return torch.argmax(action_probs).item()
         action = np.random.choice(len(action_probs), p=action_probs.detach().numpy())
         return action
-    
+
 
 class MultiDiscreteDynaQAgent(_Agent):
-    def __init__(self, q_net: MultiDiscreteQNet, deterministic: bool = False, mc_sample: int = None):
+    def __init__(
+        self,
+        q_net: MultiDiscreteQNet,
+        deterministic: bool = False,
+        mc_sample: int = None,
+    ):
         super().__init__()
         self.q_net = q_net
         self.deterministic = deterministic
         self.mc_sample = mc_sample
 
     def act(self, state):
-        with torch. ():
+        with torch.no_grad():
             if self.mc_sample is None:
                 # do full sweep
                 q_val, actions = self.q_net.complete_forward(state)
             else:
                 q_val, actions = self.q_net.mc_forward(state, self.mc_sample)
-            
+
         q_val = q_val[0]
         actions = actions[0]
 
@@ -550,5 +568,4 @@ class MultiDiscreteDynaQAgent(_Agent):
 
         p = torch.softmax(q_val, dim=0)[:, 0]
         idx = np.random.choice(len(q_val), p=p)
-        return actions[idx      ]
-            
+        return actions[idx]
