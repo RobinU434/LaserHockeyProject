@@ -158,7 +158,7 @@ class _RLAlgorithm(ABC):
     def get_name(self) -> str:
         return type(self).__name__
 
-    def to(self, device: torch.device):
+    def to(self, device: torch.device) -> "_RLAlgorithm":
         if isinstance(device, str):
             device = torch.device(device)
         self._device = device
@@ -168,6 +168,7 @@ class _RLAlgorithm(ABC):
             if not isinstance(value, nn.Module):
                 continue
             value.to(self._device)
+        return self
 
     @abstractmethod
     def load_checkpoint(self, checkpoint: str | Path):
