@@ -1,0 +1,26 @@
+results_dir: results
+episode_budget: 100_000
+eval_check_interval: 1000
+save_interval: 1000
+
+
+SelfPlay:
+  self_play_period: 1000  # epochs
+  opponent: weak  # weak, strong, self_play
+  Env:
+    keep_mode: true
+    mode: NORMAL
+    verbose: false
+  WarmupSchedule:
+    n_episodes_weak: 200
+    n_episodes_strong: 800
+
+
+Dyna:
+  batch_size: 256
+  buffer_limit: 50_000
+  start_buffer_size: 1000
+  epsilon_decay: 0.99
+  gamma: 0.99
+  tau: 0.01
+  simulation_updates: 2 
