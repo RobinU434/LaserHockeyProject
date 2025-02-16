@@ -173,11 +173,13 @@ class SelfPlayTrainer:
         rl_algorithm: _RLAlgorithm,
         checkpoint_schedule: _CheckpointSampler = None,
         warmup_schedule: WarmupSchedule = None,
+        verbose: bool = True,
     ):
         self.env = env
         self.rl_algorithm = rl_algorithm
         self.checkpoint_schedule = checkpoint_schedule
         self.warmup_schedule = warmup_schedule
+        self.verbose = verbose
 
     def do_warmup(self, total_episode_budge: int):
         if self.warmup_schedule is None:
@@ -188,11 +190,15 @@ class SelfPlayTrainer:
 
         # weak training
         self.rl_algorithm.update_env(self.warmup_schedule.weak_env)
-        self.rl_algorithm.train(self.warmup_schedule.n_episodes_weak)
+        self.rl_algorithm.train(
+            self.warmup_schedule.n_episodes_weak, verbose=self.verbose
+        )
         self.rl_algorithm.episode_offset += self.warmup_schedule.n_episodes_weak
         # strong training
         self.rl_algorithm.update_env(self.warmup_schedule.strong_env)
-        self.rl_algorithm.train(self.warmup_schedule.n_episodes_strong)
+        self.rl_algorithm.train(
+            self.warmup_schedule.n_episodes_strong, verbose=self.verbose
+        )
         self.rl_algorithm.episode_offset += self.warmup_schedule.n_episodes_strong
 
     def train(self, n_episodes: int):
@@ -221,5 +227,5 @@ class SelfPlayTrainer:
             self.env.opponent = self_play_agent
             self.rl_algorithm.update_env(self.env)
             # start training
-            self.rl_algorithm.train(self_play_budget)
+            self.rl_algorithm.train(self_play_budget, verbose=self.verbose)
             self.rl_algorithm.episode_offset += self_play_budget
