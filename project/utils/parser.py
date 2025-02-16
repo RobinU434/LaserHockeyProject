@@ -2,6 +2,32 @@ from argparse import ArgumentParser
 from typing import Tuple, Dict, List
 
 
+def add_eval_sac_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument(
+        "--checkpoint",
+        help="--no-documentation-exists--",
+        dest="checkpoint",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--n-games",
+        help="--no-documentation-exists--",
+        dest="n_games",
+        type=int,
+        default=10,
+        required=False,
+    )
+    parser.add_argument(
+        "--deterministic",
+        help="--no-documentation-exists--",
+        dest="deterministic",
+        action="store_true",
+        required=False,
+    )
+    return parser
+
+
 def add_render_sac_gym_args(parser: ArgumentParser) -> ArgumentParser:
     parser.add_argument(
         "--checkpoint",
@@ -127,6 +153,11 @@ def setup_entrypoint_parser(
     )
     render_sac_gym = add_render_sac_gym_args(render_sac_gym)
     subparser["render_sac_gym"] = render_sac_gym
+    eval_sac = command_subparser.add_parser(
+        "eval-sac", help="--no-documentation-exists--"
+    )
+    eval_sac = add_eval_sac_args(eval_sac)
+    subparser["eval_sac"] = eval_sac
     return parser, subparser
 
 

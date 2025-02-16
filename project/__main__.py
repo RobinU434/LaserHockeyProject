@@ -46,6 +46,13 @@ def execute(args: dict) -> bool:
                 max_steps=args["max_steps"],
             )
 
+        case "eval-sac":
+            module.eval_sac(
+                checkpoint=args["checkpoint"],
+                n_games=args["n_games"],
+                deterministic=args["deterministic"],
+            )
+
         case _:
             return False
 
