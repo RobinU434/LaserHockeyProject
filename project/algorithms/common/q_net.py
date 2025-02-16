@@ -230,11 +230,12 @@ class MultiDiscreteQNet(VectorizedQNet):
 
         Args:
             state (Tensor): _description_
-            action_space (MultiDiscrete): _description_
             n_samples (int): how many samples
 
         Returns:
-            Tuple[Tensor, Tensor]: _description_
+            Tuple[Tensor, Tensor]: 
+                - q_val (batch_size, n_actions, 1)
+                - actions (batch_size, n_actions, action_dim)
         """
         if len(self._all_actions) <= n_samples:
             # do full sweep
@@ -248,22 +249,24 @@ class MultiDiscreteQNet(VectorizedQNet):
         
         return self.forward(state, actions), self._all_actions[idx]
 
-    def complete_forward(self, state: Tensor) -> Tensor:
+    def complete_forward(self, state: Tensor) -> Tuple[Tensor, Tensor]:
         """_summary_
 
         Args:
             state (Tensor): ((batch_size), state_dim) if no batch_size given assume 1
 
         Returns:
-            Tensor: (batch_size, n_all_actions, 1)
+            Tuple[Tensor, Tensor]: 
+                - q_values: (batch_size, n_all_actions, 1)
+                - actions: (batch_size, n_all_actions, action_dim)
         """
         if len(state.shape) == 1:
             state = state[None]
 
         all_actions = self._encode_actions(self._all_actions)
         out = self.forward(state, all_actions)
-
-        return out, self.all_actions
+        all_actions = self._all_actions[None].repeat(len(state), 1, 1)
+        return out, all_actions
 
 
 class VariationalDiscreteQNet(DiscreteQNet):

@@ -1,11 +1,9 @@
-
 from typing import Tuple
-import torch
 import torch.nn.functional as F
-from torch import Tensor, nn, optim
+from torch import Tensor, optim
 
-from project.algorithms.common.network import FeedForwardNetwork
 from project.algorithms.common.q_net import VectorizedQNet
+
 
 class QNet(VectorizedQNet):
     def __init__(
@@ -17,7 +15,7 @@ class QNet(VectorizedQNet):
     ):
         super().__init__(state_dim, action_dim, latent_dim, [128], [128], [64, 32])
         self.optimizer = optim.AdamW(self.parameters(), lr=learning_rate)
-        
+
     def train_net(
         self, target: Tensor, mini_batch: Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]
     ) -> Tensor:
