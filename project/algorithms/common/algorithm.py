@@ -2,16 +2,18 @@ import inspect
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import List, Dict
+from typing import Any, List, Dict
 
+import gymnasium
 import torch
 from torch import nn
 from gymnasium import Env
 
 from project.algorithms.common.agent import _Agent
 from project.algorithms.common.logger import _Logger
-from project.algorithms.utils.gym_helper import PlaceHolderEnv
+from project.algorithms.utils.gym_helper import build_placeholder_env
 from project.environment.evaluate_env import _EvalEnv
+from gymnasium.spaces import Box, Discrete, MultiDiscrete
 
 
 class _RLAlgorithm(ABC):
@@ -107,9 +109,36 @@ class _RLAlgorithm(ABC):
         """sets the episode offset for logging. Particularly interesting if you start the train function multiple time on the same class to refine the agent further
 
         Args:
-            offset (int): _description_
+            offset (int): where the training should continue for logging
         """
         self.episode_offset = offset
+
+    def get_basic_save_args(self, episode_idx: int) -> Dict[str, Any]:
+        content = {
+            "epoch": episode_idx,
+            "hparams": vars(self.hparams),
+            "state_dim": self._state_dim,  # assert observation space is a box
+            "action_space": type(self._env.action_space).__name__,
+        }
+
+        if isinstance(self._env.action_space, Box):
+            content = {
+                **content,
+                "action_dim": self._action_dim,
+                "action_scale": self._action_scale.numpy(),
+                "action_bias": self._action_bias.numpy(),
+            }
+        elif isinstance(self._env.action_space, Discrete):
+            content = {
+                **content,
+                "n_actions": self._env.action_space.n
+            }
+        elif isinstance(self._env.action_space, MultiDiscrete):
+            content = {
+                **content,
+                "nvec": self._env.action_space.nvec
+            }
+        return content
 
     @abstractmethod
     def save_checkpoint(self, episode_idx: int, path: Path | str = None):
@@ -119,17 +148,12 @@ class _RLAlgorithm(ABC):
     def from_checkpoint(cls, checkpoint, env: Env = None) -> "_RLAlgorithm":
         checkpoint_content = torch.load(checkpoint, weights_only=False)
         if env is None:
-            env = PlaceHolderEnv(
-                checkpoint_content["state_dim"],
-                checkpoint_content["action_dim"],
-                checkpoint_content["action_scale"],
-                checkpoint_content["action_bias"],
-            )
+            env = build_placeholder_env(checkpoint_content)
 
-        sac: _RLAlgorithm = cls(env=env, **checkpoint_content["hparams"])
-        sac.load_checkpoint(checkpoint)
+        algorithm: _RLAlgorithm = cls(env=env, **checkpoint_content["hparams"])
+        algorithm.load_checkpoint(checkpoint)
 
-        return sac
+        return algorithm
 
     def get_name(self) -> str:
         return type(self).__name__

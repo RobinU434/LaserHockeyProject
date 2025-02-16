@@ -14,11 +14,13 @@ from tqdm import tqdm
 from project.algorithms.common.agent import _Agent
 from project.algorithms.common.algorithm import _RLAlgorithm
 from project.algorithms.common.buffer import ReplayBuffer, _ReplayBuffer
+
 # from project.algorithms.sac.buffer import ReplayBuffer
 from project.algorithms.sac.policy_net import PolicyNet
 from project.algorithms.sac.q_net import QNet
 from project.algorithms.sac.utils import get_min_q
-from project.algorithms.utils.gym_helper import PlaceHolderEnv, get_space_dim
+from project.algorithms.utils.filesystem import get_save_path
+from project.algorithms.utils.gym_helper import ContinuousPlaceHolderEnv, get_space_dim
 from project.algorithms.utils.str_ops import generate_separator
 from project.algorithms.utils.torch_ops import state_dict_to_cpu
 
@@ -287,7 +289,7 @@ class SAC(_RLAlgorithm):
         self.log_scalar("sac/alpha", alpha, episode_idx)
 
     def train(self, n_episodes=1000, verbose=False):
-        if isinstance(self._env, PlaceHolderEnv):
+        if isinstance(self._env, ContinuousPlaceHolderEnv):
             raise ValueError(
                 "Training with PlaceHolderEnv is not possible. Please update internal environment."
             )
@@ -324,45 +326,36 @@ class SAC(_RLAlgorithm):
         self._env.close()
 
     def save_checkpoint(self, episode_idx: int, path: Path | str = None):
-        self._log_dir.mkdir(parents=True, exist_ok=True)
-        if path is None:
-            path = self._log_dir / f"checkpoint_{episode_idx}.pt"
-
-        torch.save(
-            {
-                "epoch": episode_idx,
-                "pi_model_state_dict": state_dict_to_cpu(self._pi.state_dict()),
-                "pi_optimizer_state_dict": state_dict_to_cpu(
-                    self._pi.optimizer.state_dict()
-                ),
-                "q1_model_state_dict": state_dict_to_cpu(self._q1.state_dict()),
-                "q1_optimizer_state_dict": state_dict_to_cpu(
-                    self._q1.optimizer.state_dict()
-                ),
-                "q2_model_state_dict": state_dict_to_cpu(self._q2.state_dict()),
-                "q2_optimizer_state_dict": state_dict_to_cpu(
-                    self._q2.optimizer.state_dict()
-                ),
-                "q1_target_model_state_dict": state_dict_to_cpu(
-                    self._q1_target.state_dict()
-                ),
-                "q1_target_optimizer_state_dict": state_dict_to_cpu(
-                    self._q1_target.optimizer.state_dict()
-                ),
-                "q2_target_model_state_dict": state_dict_to_cpu(
-                    self._q2_target.state_dict()
-                ),
-                "q2_target_optimizer_state_dict": state_dict_to_cpu(
-                    self._q2_target.optimizer.state_dict()
-                ),
-                "hparams": vars(self.hparams),
-                "action_dim": self._action_dim,
-                "state_dim": self._state_dim,
-                "action_scale": self._action_scale.numpy(),
-                "action_bias": self._action_bias.numpy(),
-            },
-            path,
-        )
+        path = get_save_path(self._log_dir, episode_idx, path)
+        content = self.get_basic_save_args(episode_idx)
+        content = {
+            **content,
+            "pi_model_state_dict": state_dict_to_cpu(self._pi.state_dict()),
+            "pi_optimizer_state_dict": state_dict_to_cpu(
+                self._pi.optimizer.state_dict()
+            ),
+            "q1_model_state_dict": state_dict_to_cpu(self._q1.state_dict()),
+            "q1_optimizer_state_dict": state_dict_to_cpu(
+                self._q1.optimizer.state_dict()
+            ),
+            "q2_model_state_dict": state_dict_to_cpu(self._q2.state_dict()),
+            "q2_optimizer_state_dict": state_dict_to_cpu(
+                self._q2.optimizer.state_dict()
+            ),
+            "q1_target_model_state_dict": state_dict_to_cpu(
+                self._q1_target.state_dict()
+            ),
+            "q1_target_optimizer_state_dict": state_dict_to_cpu(
+                self._q1_target.optimizer.state_dict()
+            ),
+            "q2_target_model_state_dict": state_dict_to_cpu(
+                self._q2_target.state_dict()
+            ),
+            "q2_target_optimizer_state_dict": state_dict_to_cpu(
+                self._q2_target.optimizer.state_dict()
+            ),
+        }
+        torch.save(content, path)
 
     def load_checkpoint(self, checkpoint):
         checkpoint = torch.load(checkpoint, weights_only=False)
