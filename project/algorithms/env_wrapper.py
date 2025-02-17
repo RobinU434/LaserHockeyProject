@@ -122,3 +122,17 @@ class MultiDiscreteActionWrapper(ActionWrapper):
             for idx in range(self.action_dim)
         ]
         return res
+
+
+
+class AffineActionTransform(ActionWrapper):
+    def __init__(self, env, action_scale: np.ndarray, action_bias: np.ndarray):
+        super().__init__(env)
+
+        assert action_bias.shape == env.action_space.shape
+        assert action_scale.shape == env.action_space.shape
+        self.action_scale = action_scale
+        self.action_bias = action_bias
+
+    def action(self, action):
+        return action * self.action_scale + self.action_bias
