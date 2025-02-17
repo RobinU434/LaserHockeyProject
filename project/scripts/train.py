@@ -9,6 +9,7 @@ import logging
 
 from project.algorithms.common.logger import CSVLogger, TensorBoardLogger
 from project.algorithms.env_wrapper import (
+    AffineActionTransform,
     DiscreteActionWrapper,
     SymLogWrapper,
     TanhWrapper,
@@ -51,6 +52,7 @@ def train_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
     train_env = SinglePlayerHockeyEnv(**config.SelfPlay.Env.to_container())
     eval_env = EvalHockeySuite(**config.SelfPlay.Env.to_container())
 
+    train_env = AffineActionTransform(train_env, np.array([1, 1, 1, 0.5]), np.array([1, 1, 1, 0.5]))
     
     # ititialize HDF5ReplayBuffer (save interactions)
     # hdf5_replay_buffer = HDF5ReplayBuffer("interactions.h5", max_size=100000)
