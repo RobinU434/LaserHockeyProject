@@ -28,7 +28,7 @@ class _EvalEnv(ABC):
         raise NotADirectoryError
 
 
-class EvalHockeyEnv(_EvalEnv):
+class EvalHockeySuite(_EvalEnv):
     def __init__(
         self,
         keep_mode=True,

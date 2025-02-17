@@ -2,6 +2,7 @@ from pathlib import Path
 import gymnasium
 import hydra
 from gymnasium.spaces import Box, Discrete
+import numpy as np
 from omegaconf import DictConfig
 from stable_baselines3.common.logger import configure
 import logging
@@ -18,7 +19,7 @@ from project.algorithms.trainer import (
     SelfPlayTrainer,
     WarmupSchedule,
 )
-from project.environment.evaluate_env import EvalHockeyEnv
+from project.environment.evaluate_env import EvalHockeySuite
 from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
 from project.environment.single_player_env import SinglePlayerHockeyEnv
 from project.utils.configs.train_sac_config import Config as SACConfig
@@ -48,8 +49,9 @@ def train_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
     config: SACConfig = SACConfig.from_dict_config(config)
     # build envs (train, eval env)
     train_env = SinglePlayerHockeyEnv(**config.SelfPlay.Env.to_container())
-    eval_env = EvalHockeyEnv(**config.SelfPlay.Env.to_container())
+    eval_env = EvalHockeySuite(**config.SelfPlay.Env.to_container())
 
+    
     # ititialize HDF5ReplayBuffer (save interactions)
     # hdf5_replay_buffer = HDF5ReplayBuffer("interactions.h5", max_size=100000)
 
