@@ -11,11 +11,7 @@ from torch.nn import functional as F
 from tqdm import tqdm
 
 from project.algorithms.common.agent import _Agent
-from project.algorithms.common.algorithm import (
-    _RLAlgorithm,
-    _DiscreteRLAlgorithm,
-    _MultiDiscreteRLAlgorithm,
-)
+from project.algorithms.common.algorithm import _RLAlgorithm
 from project.algorithms.common.buffer import ReplayBuffer
 from project.algorithms.common.q_net import _QNet
 from project.algorithms.dyna.q_net import MultiDiscreteQNet, QNet
@@ -124,10 +120,10 @@ class _DynaQ(_RLAlgorithm):
                 )
             minibatch = state, action, next_state_pred, reward_pred, done_pred
             target = self.calculate_target(minibatch)
-            self.q_net.train_net(minibatch, target)
-
-            info = self.q_net.soft_update(self.q_target, self._tau)
+            info = self.q_net.train_net(minibatch, target)
             metrics.append(info)
+
+            self.q_net.soft_update(self.q_target, self._tau)
 
         metrics = pd.DataFrame(metrics).mean().to_dict()
         self.log_dict(metrics, episode_idx, prefix=self.get_name() + "/sim_")
@@ -233,7 +229,7 @@ class _DynaQ(_RLAlgorithm):
             )
 
 
-class DynaQ(_DynaQ, _DiscreteRLAlgorithm):
+class DynaQ(_DynaQ):
     def __init__(
         self,
         env,
@@ -363,7 +359,7 @@ class DynaQ(_DynaQ, _DiscreteRLAlgorithm):
         return DiscreteDynaQAgent(deepcopy(self.q_net), deterministic)
 
 
-class MultiDiscreteDynaQ(_DynaQ, _MultiDiscreteRLAlgorithm):
+class MultiDiscreteDynaQ(_DynaQ):
     def __init__(
         self,
         env,

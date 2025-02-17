@@ -8,9 +8,11 @@ from stable_baselines3.common.logger import configure
 import logging
 
 from project.algorithms.common.logger import CSVLogger, TensorBoardLogger
+from project.algorithms.dyna.dyna import DynaQ
 from project.algorithms.env_wrapper import (
     AffineActionTransform,
     DiscreteActionWrapper,
+    MultiDiscreteActionWrapper,
     SymLogWrapper,
     TanhWrapper,
 )
@@ -24,6 +26,7 @@ from project.environment.evaluate_env import EvalHockeySuite
 from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
 from project.environment.single_player_env import SinglePlayerHockeyEnv
 from project.utils.configs.train_sac_config import Config as SACConfig
+from project.utils.configs.train_dyna_config import Config as DynaConfig
 from gymnasium.wrappers import NormalizeReward
 
 # from project.environment.hockey_env.hdf5_replay_buffer import HDF5ReplayBuffer
@@ -52,8 +55,10 @@ def train_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
     train_env = SinglePlayerHockeyEnv(**config.SelfPlay.Env.to_container())
     eval_env = EvalHockeySuite(**config.SelfPlay.Env.to_container())
 
-    train_env = AffineActionTransform(train_env, np.array([1, 1, 1, 0.5]), np.array([1, 1, 1, 0.5]))
-    
+    train_env = AffineActionTransform(
+        train_env, np.array([1, 1, 1, 0.5]), np.array([1, 1, 1, 0.5])
+    )
+
     # ititialize HDF5ReplayBuffer (save interactions)
     # hdf5_replay_buffer = HDF5ReplayBuffer("interactions.h5", max_size=100000)
 
@@ -144,7 +149,6 @@ def train_sac_gym_env(
     sac = SAC(
         train_env,
         logger=logger,
-        save_interval=config.save_interval,
         log_dir=log_dir,
         **config.SAC.to_container(),
     )
@@ -168,11 +172,12 @@ def train_dyna_gym_env(
     max_steps: int = 200,
     n_actions: int = 10,
     device: str = "cpu",
+    quiet: bool = False,
 ):
-    config: SACConfig = SACConfig.from_dict_config(config)
+    config: DynaConfig = DynaConfig.from_dict_config(config)
     # build envs (train, eval env)
     train_env = gymnasium.make(gym_env, max_episode_steps=max_steps)
-    if isinstance(train_env, Box):
+    if isinstance(train_env.action_space, Box):
         assert train_env.action_space.shape == (
             1,
         ), "For Dyna you need a one dimension in the action space"
@@ -186,27 +191,18 @@ def train_dyna_gym_env(
         )
 
     train_env = SymLogWrapper(train_env)
-
-    print("Train on environment: ", gym_env)
-    action_space: Box = train_env.action_space
-    config.SAC.action_scale = action_space.high - action_space.low
-    config.SAC.action_bias = (action_space.high + action_space.low) / 2.0
-
+    
     # build algorithm
     log_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
     subfolder_name = gym_env.split("-")[0]
     log_dir = log_dir.parent / subfolder_name / log_dir.name
     logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
-    sac = SAC(
-        train_env,
-        logger=logger,
-        save_interval=config.save_interval,
-        log_dir=log_dir,
-        **config.SAC.to_container(),
-    )
-    sac = sac.to(device)
-    print(sac)
-
+    dyna = DynaQ(env=train_env, logger=logger, **config.to_container())
+    
+    if not quiet:
+        print("Train on environment: ", gym_env)
+        print(dyna)
+    
     if not force:
         question = input("Would you like to start to train? [Y, n]")
         if not (question is None or question.lower().strip() in ["", "y", "yes"]):
@@ -214,4 +210,4 @@ def train_dyna_gym_env(
             return
 
     # train algorithm
-    sac.train(config.episode_budget)
+    dyna.train(config.episode_budget, verbose=not quiet)
