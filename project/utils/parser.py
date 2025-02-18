@@ -84,32 +84,6 @@ def add_train_dyna_gym_args(parser: ArgumentParser) -> ArgumentParser:
     return parser
 
 
-def add_eval_sac_args(parser: ArgumentParser) -> ArgumentParser:
-    parser.add_argument(
-        "--checkpoint",
-        help="--no-documentation-exists--",
-        dest="checkpoint",
-        type=str,
-        required=True,
-    )
-    parser.add_argument(
-        "--n-games",
-        help="--no-documentation-exists--",
-        dest="n_games",
-        type=int,
-        default=10,
-        required=False,
-    )
-    parser.add_argument(
-        "--deterministic",
-        help="--no-documentation-exists--",
-        dest="deterministic",
-        action="store_true",
-        required=False,
-    )
-    return parser
-
-
 def add_render_sac_gym_args(parser: ArgumentParser) -> ArgumentParser:
     parser.add_argument(
         "--checkpoint",
@@ -138,6 +112,32 @@ def add_render_sac_gym_args(parser: ArgumentParser) -> ArgumentParser:
         dest="max_steps",
         type=int,
         default=200,
+        required=False,
+    )
+    return parser
+
+
+def add_eval_sac_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument(
+        "--checkpoint",
+        help="--no-documentation-exists--",
+        dest="checkpoint",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--n-games",
+        help="--no-documentation-exists--",
+        dest="n_games",
+        type=int,
+        default=10,
+        required=False,
+    )
+    parser.add_argument(
+        "--deterministic",
+        help="--no-documentation-exists--",
+        dest="deterministic",
+        action="store_true",
         required=False,
     )
     return parser
@@ -172,6 +172,24 @@ def add_train_sac_gym_args(parser: ArgumentParser) -> ArgumentParser:
         dest="device",
         type=str,
         default="cpu",
+        required=False,
+    )
+    return parser
+
+
+def add_render_sac_hockey_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument(
+        "--deterministic",
+        help="--no-documentation-exists--",
+        dest="deterministic",
+        action="store_true",
+        required=False,
+    )
+    parser.add_argument(
+        "--strong-opponent",
+        help="--no-documentation-exists--",
+        dest="strong_opponent",
+        action="store_true",
         required=False,
     )
     return parser
@@ -224,22 +242,27 @@ def setup_entrypoint_parser(
     train_sac_hockey = add_train_sac_hockey_args(train_sac_hockey)
     train_sac_hockey = add_hydra_parser(train_sac_hockey)
     subparser["train_sac_hockey"] = train_sac_hockey
+    render_sac_hockey = command_subparser.add_parser(
+        "render-sac-hockey", help="--no-documentation-exists--"
+    )
+    render_sac_hockey = add_render_sac_hockey_args(render_sac_hockey)
+    subparser["render_sac_hockey"] = render_sac_hockey
     train_sac_gym = command_subparser.add_parser(
         "train-sac-gym", help="--no-documentation-exists--"
     )
     train_sac_gym = add_train_sac_gym_args(train_sac_gym)
     train_sac_gym = add_hydra_parser(train_sac_gym)
     subparser["train_sac_gym"] = train_sac_gym
-    render_sac_gym = command_subparser.add_parser(
-        "render-sac-gym", help="--no-documentation-exists--"
-    )
-    render_sac_gym = add_render_sac_gym_args(render_sac_gym)
-    subparser["render_sac_gym"] = render_sac_gym
     eval_sac = command_subparser.add_parser(
         "eval-sac", help="--no-documentation-exists--"
     )
     eval_sac = add_eval_sac_args(eval_sac)
     subparser["eval_sac"] = eval_sac
+    render_sac_gym = command_subparser.add_parser(
+        "render-sac-gym", help="--no-documentation-exists--"
+    )
+    render_sac_gym = add_render_sac_gym_args(render_sac_gym)
+    subparser["render_sac_gym"] = render_sac_gym
     train_dyna_gym = command_subparser.add_parser(
         "train-dyna-gym", help="--no-documentation-exists--"
     )

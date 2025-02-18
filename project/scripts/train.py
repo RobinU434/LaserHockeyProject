@@ -197,7 +197,7 @@ def train_dyna_gym_env(
     subfolder_name = gym_env.split("-")[0]
     log_dir = log_dir.parent / subfolder_name / log_dir.name
     logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
-    
+
     dyna = DynaQ(env=train_env, logger=logger, log_dir=log_dir, **config.to_container())
     if not quiet:
         print("Train on environment: ", gym_env)

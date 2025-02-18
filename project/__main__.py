@@ -27,6 +27,12 @@ def execute(args: dict) -> bool:
                 config_name="train_sac.yaml",
             )
 
+        case "render-sac-hockey":
+            module.render_sac_hockey(
+                deterministic=args["deterministic"],
+                strong_opponent=args["strong_opponent"],
+            )
+
         case "train-sac-gym":
             api.hydra_plugin.hydra_wrapper(
                 module.train_sac_gym,
@@ -38,19 +44,19 @@ def execute(args: dict) -> bool:
                 config_name="train_sac.yaml",
             )
 
+        case "eval-sac":
+            module.eval_sac(
+                checkpoint=args["checkpoint"],
+                n_games=args["n_games"],
+                deterministic=args["deterministic"],
+            )
+
         case "render-sac-gym":
             module.render_sac_gym(
                 checkpoint=args["checkpoint"],
                 gym_env=args["gym_env"],
                 deterministic=args["deterministic"],
                 max_steps=args["max_steps"],
-            )
-
-        case "eval-sac":
-            module.eval_sac(
-                checkpoint=args["checkpoint"],
-                n_games=args["n_games"],
-                deterministic=args["deterministic"],
             )
 
         case "train-dyna-gym":
