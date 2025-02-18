@@ -220,7 +220,7 @@ class _DynaQ(_RLAlgorithm):
 
                 score += reward
                 episode_steps += 1
-                log_probs += log_prob
+                log_probs += log_prob.item()
                 with torch.no_grad():
                     int_action = action.item()
                     q_target = self.q_target.complete_forward(torch.from_numpy(state))
@@ -252,7 +252,6 @@ class _DynaQ(_RLAlgorithm):
                 stable_update / episode_steps,
                 episode_idx,
             )
-
             self.log_scalar(
                 self.get_name() + "/max_q",
                 overestimation / episode_steps,
