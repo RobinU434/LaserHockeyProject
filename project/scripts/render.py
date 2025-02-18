@@ -7,6 +7,8 @@ from gymnasium.spaces import Box, Discrete
 from project.algorithms.dyna.dyna import DynaQ
 from project.algorithms.env_wrapper import DiscreteActionWrapper
 from project.algorithms.sac.sac import SAC
+from project.environment.hockey_env.hockey.hockey_env import BasicOpponent
+from project.environment.single_player_env import SinglePlayerHockeyEnv
 
 
 def render_sac(
@@ -31,8 +33,23 @@ def render_sac(
     s, _ = env.reset()
     while not (done or truncated):
         a = agent.act(s)
-        s, r, truncated, done, _ = env.step(a)
+        s, r, done, truncated, _ = env.step(a)
         env.render()
+
+
+def render_sac_hockey(checkpoint: str | Path, deterministic: bool = False, strong_opponent: bool = False):
+    opponent = BasicOpponent(not strong_opponent)
+    env = SinglePlayerHockeyEnv(opponent)
+    sac = SAC.from_checkpoint(checkpoint, env)
+    agent = sac.get_agent(deterministic)
+
+    done, truncated = False, False
+    s, _ = env.reset()
+    while not (done or truncated):
+        a = agent.act(s)
+        s, r, done, truncated, _ = env.step(a)
+        env.render()
+
 
 
 def render_dyna(

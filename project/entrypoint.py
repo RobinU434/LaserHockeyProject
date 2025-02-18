@@ -27,6 +27,13 @@ class Entrypoint:
 
         train_sac(config, force, device)
 
+    def render_sac_hockey(
+        checkpoint: str, deterministic: bool = False, strong_opponent: bool = False
+    ):
+        from project.scripts.render import render_sac_hockey
+
+        render_sac_hockey(checkpoint, deterministic, strong_opponent)
+
     @add_hydra("config", None, config_path="config", config_name="train_sac.yaml")
     def train_sac_gym(
         self,
@@ -40,6 +47,11 @@ class Entrypoint:
 
         train_sac_gym_env(config, force, gym_env, max_steps, device)
 
+    def eval_sac(self, checkpoint: str, n_games: int = 10, deterministic: bool = False):
+        from project.scripts.evaluate import evaluate_sac
+
+        evaluate_sac(checkpoint, n_games, deterministic)
+
     def render_sac_gym(
         self,
         checkpoint: str,
@@ -50,11 +62,6 @@ class Entrypoint:
         from project.scripts.render import render_sac
 
         render_sac(checkpoint, gym_env, deterministic, max_steps)
-
-    def eval_sac(self, checkpoint: str, n_games: int = 10, deterministic: bool = False):
-        from project.scripts.evaluate import evaluate_sac
-
-        evaluate_sac(checkpoint, n_games, deterministic)
 
     @add_hydra("config", None, config_path="config", config_name="train_dyna.yaml")
     def train_dyna_gym(
