@@ -98,12 +98,42 @@ class _RLAlgorithm(ABC):
         Args:
             episode_idx (int): when this evaluate was deployed
         """
+        if self._eval_envs is None:
+            return
+        
         # use the argmax agent to evaluate it
         agent = self.get_agent(deterministic=True)
         for eval_env in self._eval_envs:
+            if eval_env is None:
+                continue
+            
             metrics = eval_env.eval_player(agent)
             for k, v in metrics.items():
                 self.log_scalar(k, v, episode_idx)
+
+    def mid_training_hooks(self, episode_idx: int):
+        if (
+            self._save_interval is not None
+            and (episode_idx + 1) % self._save_interval == 0
+        ):
+            # save model
+            self.save_checkpoint(episode_idx + 1)
+
+        if (
+            self._eval_check_interval is not None
+            and (episode_idx + 1) % self._eval_check_interval == 0
+        ):
+            self.evaluate(episode_idx + 1)
+
+        self.save_metrics()
+
+    def post_training_hooK(self, n_episodes: int):
+        # store metrics in a csv file
+        self.save_metrics()
+        self.save_checkpoint(n_episodes)
+        self._env.close()
+
+
 
     def set_episode_offset(self, offset: int):
         """sets the episode offset for logging. Particularly interesting if you start the train function multiple time on the same class to refine the agent further
