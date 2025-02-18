@@ -188,13 +188,9 @@ class RSSM(nn.Module):
         self.recurrent_unit = RecurrentModel(
             self.state_repr_dim, self.action_dim, self.hidden_dim, head_dim=128
         )
-        self.repr_model = ConditionalEncoder(
-            self.obs_dim, self.hidden_dim
-        )  # encoder
+        self.repr_model = ConditionalEncoder(self.obs_dim, self.hidden_dim)  # encoder
 
-        self.transition_model = nn.Linear(
-            self.hidden_dim, self.state_repr_dim
-        )
+        self.transition_model = nn.Linear(self.hidden_dim, self.state_repr_dim)
 
     def forward(
         self, observation: Tensor, action: Tensor, hidden_state: Tensor = None
@@ -216,7 +212,9 @@ class RSSM(nn.Module):
                 (obs_batch, action_batch, self.hidden_dim), device=observation.device
             )
         state_repr = self.repr_model.forward(observation, hidden_state)
-        next_hidden_state = self.recurrent_unit.forward(state_repr, action, hidden_state)
+        next_hidden_state = self.recurrent_unit.forward(
+            state_repr, action, hidden_state
+        )
         state_repr_hat = self.transition_model.forward(hidden_state)
 
-        return 
+        return

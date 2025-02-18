@@ -37,7 +37,9 @@ def render_sac(
         env.render()
 
 
-def render_sac_hockey(checkpoint: str | Path, deterministic: bool = False, strong_opponent: bool = False):
+def render_sac_hockey(
+    checkpoint: str | Path, deterministic: bool = False, strong_opponent: bool = False
+):
     opponent = BasicOpponent(not strong_opponent)
     env = SinglePlayerHockeyEnv(opponent)
     sac = SAC.from_checkpoint(checkpoint, env)
@@ -49,7 +51,6 @@ def render_sac_hockey(checkpoint: str | Path, deterministic: bool = False, stron
         a = agent.act(s)
         s, r, done, truncated, _ = env.step(a)
         env.render()
-
 
 
 def render_dyna(

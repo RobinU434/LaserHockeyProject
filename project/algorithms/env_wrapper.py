@@ -124,7 +124,6 @@ class MultiDiscreteActionWrapper(ActionWrapper):
         return res
 
 
-
 class AffineActionTransform(ActionWrapper):
     def __init__(self, env, action_scale: np.ndarray, action_bias: np.ndarray):
         super().__init__(env)
