@@ -174,6 +174,13 @@ def add_train_sac_gym_args(parser: ArgumentParser) -> ArgumentParser:
         default="cpu",
         required=False,
     )
+    parser.add_argument(
+        "--quiet",
+        help="--no-documentation-exists--",
+        dest="quiet",
+        action="store_true",
+        required=False,
+    )
     return parser
 
 

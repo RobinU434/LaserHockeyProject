@@ -22,7 +22,7 @@ from project.algorithms.trainer import (
     SelfPlayTrainer,
     WarmupSchedule,
 )
-from project.environment.evaluate_env import EvalHockeySuite
+from project.environment.evaluate_env import EvalGymSuite, EvalHockeySuite
 from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
 from project.environment.single_player_env import SinglePlayerHockeyEnv
 from project.utils.configs.train_sac_config import Config as SACConfig
@@ -125,6 +125,7 @@ def train_sac_gym_env(
     gym_env: str,
     max_steps: int = 200,
     device: str = "cpu",
+    quiet: bool = False,
 ):
     config: SACConfig = SACConfig.from_dict_config(config)
     # build envs (train, eval env)
@@ -134,9 +135,9 @@ def train_sac_gym_env(
             "LunarLander-v3", continuous=True, max_episode_steps=max_steps
         )
     # train_env = TanhWrapper(train_env, 1000)
-    train_env = SymLogWrapper(train_env)
+    # train_env = SymLogWrapper(train_env)
+    eval_env = EvalGymSuite(train_env, n_episodes=10)
 
-    print("Train on environment: ", gym_env)
     action_space: Box = train_env.action_space
     config.SAC.action_scale = action_space.high - action_space.low
     config.SAC.action_bias = (action_space.high + action_space.low) / 2.0
@@ -148,12 +149,16 @@ def train_sac_gym_env(
     logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
     sac = SAC(
         train_env,
+        eval_env=[eval_env],
         logger=logger,
         log_dir=log_dir,
         **config.SAC.to_container(),
     )
     sac = sac.to(device)
-    print(sac)
+    if not quiet:
+        print("Train on environment: ", gym_env)
+        print(config)
+        print(sac)
 
     if not force:
         question = input("Would you like to start to train? [Y, n]")
@@ -162,7 +167,7 @@ def train_sac_gym_env(
             return
 
     # train algorithm
-    sac.train(config.episode_budget)
+    sac.train(config.episode_budget, verbose=not quiet)
 
 
 def train_dyna_gym_env(
@@ -190,6 +195,8 @@ def train_dyna_gym_env(
             f"Argument n_actions will be ignored. Instead use n_actions from given actions space: n={train_env.action_space.n}"
         )
 
+    eval_env = EvalGymSuite(train_env, n_episodes=10)
+
     # train_env = SymLogWrapper(train_env)
 
     # build algorithm
@@ -198,7 +205,15 @@ def train_dyna_gym_env(
     log_dir = log_dir.parent / subfolder_name / log_dir.name
     logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
 
-    dyna = DynaQ(env=train_env, logger=logger, log_dir=log_dir, **config.to_container())
+    dyna = DynaQ(
+        env=train_env,
+        eval_env=[eval_env],
+        logger=logger,
+        log_dir=log_dir,
+        **config.to_container(),
+    )
+    dyna.to(device)
+
     if not quiet:
         print("Train on environment: ", gym_env)
         print(config)

@@ -42,10 +42,11 @@ class Entrypoint:
         force: bool = False,
         max_steps: int = 200,
         device: str = "cpu",
+        quiet: bool = False,
     ):
         from project.scripts.train import train_sac_gym_env
 
-        train_sac_gym_env(config, force, gym_env, max_steps, device)
+        train_sac_gym_env(config, force, gym_env, max_steps, device, quiet)
 
     def eval_sac(self, checkpoint: str, n_games: int = 10, deterministic: bool = False):
         from project.scripts.evaluate import evaluate_sac
