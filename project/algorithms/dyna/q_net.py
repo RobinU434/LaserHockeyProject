@@ -18,7 +18,12 @@ class QNet(DiscreteQNet):
         **kwargs
     ):
         super().__init__(
-            state_dim, n_actions, architecture, activation_function, *args, **kwargs
+            state_dim,
+            n_actions,
+            architecture,
+            activation_function,
+            *args,
+            **kwargs,
         )
 
         self.optimizer = torch.optim.AdamW(self.parameters(), lr=lr)
@@ -28,7 +33,6 @@ class QNet(DiscreteQNet):
         self, mini_batch: Tuple[Tensor, Tensor, Tensor, Tensor, Tensor], target: Tensor
     ) -> Dict[str, float]:
         state, action, _, _, _ = mini_batch
-
         action = action.int()
         if action.shape[1] == 1:
             action = action[:, 0]
@@ -66,7 +70,7 @@ class MultiDiscreteQNet(_MultiDiscreteQNet):
             latent_mlp_architecture,
             memory_optimization,
             *args,
-            **kwargs
+            **kwargs,
         )
 
         self.criterion = nn.MSELoss()

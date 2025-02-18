@@ -35,7 +35,7 @@ class _DynaQ(_RLAlgorithm):
         batch_size: int = 256,
         buffer_limit: int = 50_000,
         start_buffer_size: int = 1000,
-        epsilon_decay: float = 0.99,  # decay epsilon greedy policy
+        epsilon_decay: float = 0.85,  # decay epsilon greedy policy
         gamma: float = 0.99,  # discount factor
         tau: float = 0.01,  # soft update parameter
         simulation_updates: int = 2,
@@ -72,8 +72,8 @@ class _DynaQ(_RLAlgorithm):
         self.q_target: _QNet
         self.world_model: WorldModel
 
-    def _get_epsilon(self, total_steps: int):
-        return math.exp(-self._epsilon_decay * total_steps)
+    def _get_epsilon(self, episode_idx):
+        return math.exp(-(1 - self._epsilon_decay) * episode_idx)
 
     def encode_action(self, action: int | Tensor) -> Tensor:
         """converts the discrete action into an action encoding
@@ -86,11 +86,12 @@ class _DynaQ(_RLAlgorithm):
         """
         raise NotImplementedError
 
-    def get_action(self, state: np.ndarray) -> Tuple[int, float]:
+    def get_action(self, state: np.ndarray, episode_idx: int) -> Tuple[int, float]:
         """epsilon greedy policy
 
         Args:
             state (np.ndarray): current state
+            episode_idx (int): current episode_idx
 
         Returns:
             int: discrete action
@@ -189,12 +190,14 @@ class _DynaQ(_RLAlgorithm):
             score = 0
             episode_steps = 0
             log_probs = 0
+            stable_update = 0
+            overestimation = 0
 
             done = False
             truncated = False
             state, _ = self._env.reset()
             while not (done or truncated):
-                action, log_prob = self.get_action(torch.from_numpy(state))
+                action, log_prob = self.get_action(torch.from_numpy(state), episode_idx)
                 # Discrete vs MultiDiscrete
                 next_state, reward, done, truncated, _ = self._env.step(action)
                 if isinstance(action, int):
@@ -218,6 +221,16 @@ class _DynaQ(_RLAlgorithm):
                 score += reward
                 episode_steps += 1
                 log_probs += log_prob
+                with torch.no_grad():
+                    int_action = action.item()
+                    q_target = self.q_target.complete_forward(torch.from_numpy(state))
+                    q_value = self.q_net.complete_forward(torch.from_numpy(state))
+                    stable_update += (
+                        q_target[int_action].item() - q_value[int_action].item()
+                    )
+                    overestimation += torch.max(
+                        self.q_net.complete_forward(torch.from_numpy(state))
+                    ).item()
 
                 state = next_state
                 self.total_steps += 1
@@ -225,8 +238,29 @@ class _DynaQ(_RLAlgorithm):
             self.log_scalar("mean_score", score / episode_steps, episode_idx)
             self.log_scalar("episode_steps", episode_steps, episode_idx)
             self.log_scalar(
-                self.get_name() + "/log_prob", log_probs / episode_steps, episode_idx
+                self.get_name() + "/log_prob",
+                log_probs / episode_steps,
+                episode_idx,
             )
+            self.log_scalar(
+                self.get_name() + "/epsilon",
+                self._get_epsilon(episode_idx),
+                episode_idx,
+            )
+            self.log_scalar(
+                self.get_name() + "/q_update",
+                stable_update / episode_steps,
+                episode_idx,
+            )
+
+            self.log_scalar(
+                self.get_name() + "/max_q",
+                overestimation / episode_steps,
+                episode_idx,
+            )
+
+            self.mid_training_hooks(episode_idx)
+        self.post_training_hooK(n_episodes)
 
 
 class DynaQ(_DynaQ):
@@ -241,7 +275,7 @@ class DynaQ(_DynaQ):
         batch_size: int = 256,
         buffer_limit: int = 50_000,
         start_buffer_size: int = 1000,
-        epsilon_decay: float = 0.99,  # decay epsilon greedy policy
+        epsilon_decay: float = 0.999,  # decay epsilon greedy policy
         gamma: float = 0.99,  # discount factor
         tau: float = 0.01,  # soft update parameter
         simulation_updates: int = 2,
@@ -272,8 +306,12 @@ class DynaQ(_DynaQ):
 
         self._n_actions = self._env.action_space.n
 
-        self.q_net: QNet = QNet(self._state_dim, self._n_actions)
-        self.q_target: QNet = QNet(self._state_dim, self._n_actions)
+        self.q_net: QNet = QNet(
+            self._state_dim, self._n_actions, architecture=[128, 128]
+        )
+        self.q_target: QNet = QNet(
+            self._state_dim, self._n_actions, architecture=[128, 128]
+        )
         self.q_target.load_state_dict(self.q_net.state_dict().copy())
 
         # note n_actions = action dim because of one hot encoding -> easiest encoding but others are possible
@@ -299,9 +337,9 @@ class DynaQ(_DynaQ):
         a = a.float()
         return a
 
-    def get_action(self, state: np.ndarray) -> Tuple[int, float]:
+    def get_action(self, state: np.ndarray, episode_idx: int) -> Tuple[int, float]:
         # decay epsilon exponentially
-        epsilon = self._get_epsilon(self.total_steps)
+        epsilon = self._get_epsilon(episode_idx)
         if np.random.uniform() <= epsilon:  # random action
             action = np.random.randint(0, self._n_actions)
             log_prob = -math.log(self._n_actions)
@@ -335,7 +373,6 @@ class DynaQ(_DynaQ):
 
     def load_checkpoint(self, checkpoint):
         checkpoint = torch.load(checkpoint, weights_only=False)
-        self.q_net.load_state_dict(checkpoint[""])
         self.q_net.load_state_dict(checkpoint["q_state_dict"])
         self.q_net.optimizer.load_state_dict(checkpoint["q_optimizer_state_dict"])
         self.q_target.load_state_dict(checkpoint["q_target_state_dict"])
@@ -451,8 +488,8 @@ class MultiDiscreteDynaQ(_DynaQ):
         q_max = torch.max(q_value, dim=-1, keepdim=True)[0]
         return q_max
 
-    def get_action(self, state):
-        epsilon = self._get_epsilon(self.total_steps)
+    def get_action(self, state, episode_idx):
+        epsilon = self._get_epsilon(episode_idx)
         if np.random.uniform() <= epsilon:  # random action
             action_idx = np.random.randint(0, self._n_actions)
             action = self.q_net._all_actions[action_idx]
@@ -526,9 +563,9 @@ class DiscreteDynaQAgent(_Agent):
         self.deterministic = deterministic
         self.q_net = q_net
 
-    def act(self, state):
+    def act(self, state) -> int:
         with torch.no_grad():
-            action_probs = self.q_net.action_probs(state)
+            action_probs = self.q_net.action_probs(torch.from_numpy(state))
         if self.deterministic:
             return torch.argmax(action_probs).item()
         action = np.random.choice(len(action_probs), p=action_probs.detach().numpy())

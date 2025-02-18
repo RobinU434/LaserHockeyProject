@@ -2,7 +2,7 @@ from typing import Dict, List, Tuple
 from torch import Tensor, nn
 import torch
 from project.algorithms.common.network import FeedForwardNetwork
-from torch.nn import Sequential, Softmax
+from torch.nn import Sequential, Sigmoid
 
 
 class WorldModel(nn.Module):
@@ -33,7 +33,7 @@ class WorldModel(nn.Module):
         )
         self._reward_pred = FeedForwardNetwork(latent_dim, 1, architecture=[128])
         self._done_pred = Sequential(
-            FeedForwardNetwork(latent_dim, 1, architecture=[128]), Softmax(dim=-1)
+        FeedForwardNetwork(latent_dim, 1, architecture=[128]), Sigmoid( )
         )
 
         self.mse = nn.MSELoss()
@@ -71,7 +71,7 @@ class WorldModel(nn.Module):
     ) -> Dict[str, float]:
         next_state_pred, reward_pred, done_pred = self.forward(state, action)
         state_loss = self.mse.forward(next_state_pred, next_state)
-        reward_loss = self.mse.forward(reward_pred, reward)
+        reward_loss = self.mse.forward(reward_pred, reward) 
         done_loss = self.bce.forward(done_pred, done)
         loss = state_loss + reward_loss + done_loss
 
