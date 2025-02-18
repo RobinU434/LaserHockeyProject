@@ -100,14 +100,14 @@ class _RLAlgorithm(ABC):
         """
         if self._eval_envs is None:
             return
-        
+
         # use the argmax agent to evaluate it
         agent = self.get_agent(deterministic=True)
         for eval_env in self._eval_envs:
             if eval_env is None:
                 continue
-            
-            metrics = eval_env.eval_player(agent)
+
+            metrics = eval_env.eval_agent(agent)
             for k, v in metrics.items():
                 self.log_scalar(k, v, episode_idx)
 
@@ -132,8 +132,6 @@ class _RLAlgorithm(ABC):
         self.save_metrics()
         self.save_checkpoint(n_episodes)
         self._env.close()
-
-
 
     def set_episode_offset(self, offset: int):
         """sets the episode offset for logging. Particularly interesting if you start the train function multiple time on the same class to refine the agent further
