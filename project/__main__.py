@@ -64,6 +64,14 @@ def execute(args: dict) -> bool:
                 config_name="train_dyna.yaml",
             )
 
+        case "render-dyna-gym":
+            module.render_dyna_gym(
+                checkpoint=args["checkpoint"],
+                gym_env=args["gym_env"],
+                deterministic=args["deterministic"],
+                max_steps=args["max_steps"],
+            )
+
         case _:
             return False
 

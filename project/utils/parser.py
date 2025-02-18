@@ -2,6 +2,39 @@ from argparse import ArgumentParser
 from typing import Tuple, Dict, List
 
 
+def add_render_dyna_gym_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument(
+        "--checkpoint",
+        help="--no-documentation-exists--",
+        dest="checkpoint",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--gym-env",
+        help="--no-documentation-exists--",
+        dest="gym_env",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--deterministic",
+        help="--no-documentation-exists--",
+        dest="deterministic",
+        action="store_true",
+        required=False,
+    )
+    parser.add_argument(
+        "--max-steps",
+        help="--no-documentation-exists--",
+        dest="max_steps",
+        type=int,
+        default=200,
+        required=False,
+    )
+    return parser
+
+
 def add_train_dyna_gym_args(parser: ArgumentParser) -> ArgumentParser:
     parser.add_argument(
         "--gym-env",
@@ -213,6 +246,11 @@ def setup_entrypoint_parser(
     train_dyna_gym = add_train_dyna_gym_args(train_dyna_gym)
     train_dyna_gym = add_hydra_parser(train_dyna_gym)
     subparser["train_dyna_gym"] = train_dyna_gym
+    render_dyna_gym = command_subparser.add_parser(
+        "render-dyna-gym", help="--no-documentation-exists--"
+    )
+    render_dyna_gym = add_render_dyna_gym_args(render_dyna_gym)
+    subparser["render_dyna_gym"] = render_dyna_gym
     return parser, subparser
 
 

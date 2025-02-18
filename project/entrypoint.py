@@ -70,3 +70,14 @@ class Entrypoint:
         from project.scripts.train import train_dyna_gym_env
 
         train_dyna_gym_env(config, force, gym_env, max_steps, n_actions, device, quiet)
+
+    def render_dyna_gym(
+        self,
+        checkpoint: str,
+        gym_env: str,
+        deterministic: bool = False,
+        max_steps: int = 200,
+    ):
+        from project.scripts.render import render_dyna
+
+        render_dyna(checkpoint, gym_env, deterministic, max_steps)
