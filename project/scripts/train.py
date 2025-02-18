@@ -190,19 +190,20 @@ def train_dyna_gym_env(
             f"Argument n_actions will be ignored. Instead use n_actions from given actions space: n={train_env.action_space.n}"
         )
 
-    train_env = SymLogWrapper(train_env)
-    
+    # train_env = SymLogWrapper(train_env)
+
     # build algorithm
     log_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
     subfolder_name = gym_env.split("-")[0]
     log_dir = log_dir.parent / subfolder_name / log_dir.name
     logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
-    dyna = DynaQ(env=train_env, logger=logger, **config.to_container())
     
+    dyna = DynaQ(env=train_env, logger=logger, log_dir=log_dir, **config.to_container())
     if not quiet:
         print("Train on environment: ", gym_env)
+        print(config)
         print(dyna)
-    
+
     if not force:
         question = input("Would you like to start to train? [Y, n]")
         if not (question is None or question.lower().strip() in ["", "y", "yes"]):
