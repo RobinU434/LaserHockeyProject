@@ -3,6 +3,7 @@ from typing import Dict
 
 import pandas as pd
 from gymnasium import Env
+import gymnasium
 from tqdm import tqdm
 
 from project.algorithms.common.agent import _Agent
@@ -16,16 +17,72 @@ class _EvalEnv(ABC):
         super().__init__()
 
     @abstractmethod
-    def eval_player(self, player: _Agent) -> Dict[str, float]:
-        """do player evaluation and return metrics / statistics of this evaluation
+    def eval_agent(self, agent: _Agent) -> Dict[str, float]:
+        """do agent evaluation and return metrics / statistics of this evaluation
 
         Args:
-            player (_Agent): agent to evaluate
+            agent (_Agent): agent to evaluate
 
         Returns:
             Dict[str, float]: dict with names and statistics
         """
         raise NotADirectoryError
+
+
+class EvalGymEnv(_EvalEnv):
+    def __init__(self, env: Env, n_episodes: int = 1):
+        super().__init__()
+
+        self.env = env
+        self.n_episodes = n_episodes
+
+    @classmethod
+    def make(cls, env_name: str, n_games: int = 1, *args, **kwargs) -> "EvalGymEnv":
+        env = gymnasium.make(env_name, *args, **kwargs)
+        obj = cls(env, n_games)
+        return obj
+    
+    def eval_agent(self, agent):
+        results = []
+        iterator = range(self.n_games)
+        if self.verbose:
+            iterator = tqdm(iterator, desc="Evaluate", unit="game")
+
+        for _ in range(self.n_games):
+            results.append(self._collect_rollout(agent))
+        
+        results = pd.DataFrame(results)
+        mean_results = results.mean()
+        mean_results = mean_results.to_dict()
+        # add prefix
+        mean_results = {k: v for k, v in mean_results.items()}
+        return mean_results 
+
+
+    def collect_rollout(self, agent: _Agent) -> Dict[str, float]:
+        score = 0
+        step_counter = 0
+        
+        done, truncated = False, False
+        state, _ = self.env.reset()
+        while not (done or truncated):
+            action = agent.act(state)
+            next_state, reward, done, truncated, _ = self.env.step(action)
+
+            step_counter += 1
+            score += reward
+
+            state = next_state
+
+        mean_score = score / step_counter
+        mean_length = step_counter
+
+        results = {
+            "mean_score": mean_score,
+            "mean_length": mean_length,
+        }
+
+        return results
 
 
 class EvalHockeySuite(_EvalEnv):
@@ -50,7 +107,7 @@ class EvalHockeySuite(_EvalEnv):
             opponent=weak_opponent, keep_mode=keep_mode, mode=mode, verbose=verbose
         )
 
-    def eval_player(self, player: _Agent) -> Dict[str, float]:
+    def eval_agent(self, player: _Agent) -> Dict[str, float]:
         """evaluate player on the weak and strong opponent
 
         Args:
