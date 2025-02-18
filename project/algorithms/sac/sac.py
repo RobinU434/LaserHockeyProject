@@ -304,26 +304,8 @@ class SAC(_RLAlgorithm):
             if len(self._memory) >= self._start_buffer_size:
                 self.train_nets(episode_idx)
 
-            if (
-                self._save_interval is not None
-                and (episode_idx + 1) % self._save_interval == 0
-            ):
-                # save model
-                self.save_checkpoint(episode_idx + 1)
-
-            if (
-                self._eval_check_interval is not None
-                and (episode_idx + 1) % self._eval_check_interval == 0
-            ):
-                self.evaluate(episode_idx + 1)
-
-            # save metrics every run
-            self.save_metrics()
-
-        # store metrics in a csv file
-        self.save_metrics()
-        self.save_checkpoint(n_episodes)
-        self._env.close()
+            self.mid_training_hooks(episode_idx)
+        self.post_training_hooK(n_episodes)
 
     def save_checkpoint(self, episode_idx: int, path: Path | str = None):
         path = get_save_path(self._log_dir, episode_idx, path)
