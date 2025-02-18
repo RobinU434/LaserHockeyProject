@@ -29,7 +29,7 @@ class _EvalEnv(ABC):
         raise NotADirectoryError
 
 
-class EvalGymEnv(_EvalEnv):
+class EvalGymSuite(_EvalEnv):
     def __init__(self, env: Env, n_episodes: int = 1):
         super().__init__()
 
@@ -37,11 +37,11 @@ class EvalGymEnv(_EvalEnv):
         self.n_episodes = n_episodes
 
     @classmethod
-    def make(cls, env_name: str, n_games: int = 1, *args, **kwargs) -> "EvalGymEnv":
+    def make(cls, env_name: str, n_games: int = 1, *args, **kwargs) -> "EvalGymSuite":
         env = gymnasium.make(env_name, *args, **kwargs)
         obj = cls(env, n_games)
         return obj
-    
+
     def eval_agent(self, agent):
         results = []
         iterator = range(self.n_games)
@@ -50,19 +50,18 @@ class EvalGymEnv(_EvalEnv):
 
         for _ in range(self.n_games):
             results.append(self._collect_rollout(agent))
-        
+
         results = pd.DataFrame(results)
         mean_results = results.mean()
         mean_results = mean_results.to_dict()
         # add prefix
         mean_results = {k: v for k, v in mean_results.items()}
-        return mean_results 
-
+        return mean_results
 
     def collect_rollout(self, agent: _Agent) -> Dict[str, float]:
         score = 0
         step_counter = 0
-        
+
         done, truncated = False, False
         state, _ = self.env.reset()
         while not (done or truncated):
