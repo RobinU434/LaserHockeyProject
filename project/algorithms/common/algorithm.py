@@ -25,6 +25,7 @@ class _RLAlgorithm(ABC):
         eval_check_interval: int = None,
         save_interval: int = None,
         log_dir: Path = None,
+        device: str | torch.device = "cpu",
         *args,
         **kwargs,
     ):
@@ -43,11 +44,11 @@ class _RLAlgorithm(ABC):
             if not isinstance(self._log_dir, Path)
             else self._log_dir
         )
+        self._device = device if isinstance(device, torch.device) else torch.device(device)
 
         self.hparams = Namespace()
         self.episode_offset = 0
-        self._device = torch.device("cpu")
-
+        
     def save_hyperparmeters(self, *args):
         # Get the frame of the calling function (i.e., the __init__ method)
         frame = inspect.currentframe().f_back
@@ -202,4 +203,4 @@ class _RLAlgorithm(ABC):
 
     @abstractmethod
     def get_agent(self, deterministic: bool = True) -> _Agent:
-        raise NotImplementedError
+        raise NotImplementedError           

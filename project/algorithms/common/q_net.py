@@ -1,16 +1,23 @@
 from itertools import product
 from typing import Dict, List, Tuple
+
+import einops
 import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
-import einops
 
 from project.algorithms.common.network import FeedForwardNetwork
 from project.algorithms.utils.encoding import multi_hot
 
 
 class _QNet(nn.Module):
+    def __init__(self, device: str | torch.device = "cpu", *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._device = (
+            device if isinstance(device, torch.device) else torch.device(device)
+        )
+
     def soft_update(self, net_target: nn.Module, tau: float):
         """update the given parameters with the parameters from the module
 
@@ -55,10 +62,11 @@ class VectorizedQNet(_QNet):
         action_head_architecture: List[int] = [128],
         state_head_architecture: List[int] = [128],
         latent_mlp_architecture: List[int] = [64, 32],
+        device: str | torch.device = "cpu",
         *args,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(device, *args, **kwargs)
 
         self.action_head = FeedForwardNetwork(
             action_dim,
@@ -66,13 +74,16 @@ class VectorizedQNet(_QNet):
             architecture=action_head_architecture,
             activation_function="ReLU",
             final_activation="ReLU",
+            device=self._device,
         )
+
         self.state_head = FeedForwardNetwork(
             state_dim,
             latent_dim,
             architecture=state_head_architecture,
             activation_function="ReLU",
             final_activation="ReLU",
+            device=self._device,
         )
         self.latent_mlp = FeedForwardNetwork(
             2 * latent_dim,
@@ -80,6 +91,7 @@ class VectorizedQNet(_QNet):
             architecture=latent_mlp_architecture,
             activation_function="ReLU",
             final_activation=None,
+            device=self._device,
         )
 
     def forward(self, s: Tensor, a: Tensor) -> Tensor:
@@ -98,12 +110,17 @@ class DiscreteQNet(_QNet):
         n_actions: int,
         architecture: List[int] = [128],
         activation_function: str = "ReLU",
+        device: str | torch.device = "cpu",
         *args,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(device, *args, **kwargs)
         self.net = FeedForwardNetwork(
-            state_dim, n_actions, architecture, activation_function
+            state_dim,
+            n_actions,
+            architecture,
+            activation_function,
+            device=self._device,
         )
 
     def complete_forward(self, state: Tensor) -> Tensor:
@@ -166,6 +183,7 @@ class MultiDiscreteQNet(VectorizedQNet):
         state_head_architecture=[128],
         latent_mlp_architecture=[64, 32],
         memory_optimization: bool = False,
+        device: str | torch.device = "cpu",
         *args,
         **kwargs,
     ):
@@ -178,6 +196,7 @@ class MultiDiscreteQNet(VectorizedQNet):
             action_head_architecture,
             state_head_architecture,
             latent_mlp_architecture,
+            device,
             *args,
             **kwargs,
         )
@@ -192,10 +211,17 @@ class MultiDiscreteQNet(VectorizedQNet):
         else:
             action = self._encode_actions(action)
 
+        if len(action.shape) == 1 and len(state.shape) == 2:
+            action = action[None]
+        elif len(action.shape) == 2 and len(state.shape) == 1:
+            state = state[None]
+
         return super().forward(state, action)
 
     def _encode_actions(self, actions: Tensor) -> Tensor:
-        return multi_hot(actions, torch.from_numpy(self.nvec)).float()
+        enc = multi_hot(actions.cpu(), torch.from_numpy(self.nvec)).float()
+        enc = enc.to(actions.device)
+        return enc
 
     def pair_forward(self, state: Tensor, actions: Tensor) -> Tensor:
         """
@@ -253,7 +279,7 @@ class MultiDiscreteQNet(VectorizedQNet):
             state (Tensor): _description_
             n_samples (int): how many samples
 
-        Returns:    
+        Returns:
             Tuple[Tensor, Tensor]:
                 - q_val (batch_size, n_actions, 1)
                 - actions (batch_size, n_actions, action_dim)
@@ -304,10 +330,17 @@ class VariationalDiscreteQNet(DiscreteQNet):
         n_actions,
         architecture=[128],
         activation_function="ReLU",
+        device: str | torch.device = "cpu",
         *args,
         **kwargs,
     ):
         super().__init__(
-            state_dim, n_actions, architecture, activation_function, *args, **kwargs
+            state_dim,
+            n_actions,
+            architecture,
+            activation_function,
+            device,
+            *args,
+            **kwargs,
         )
         raise NotImplementedError

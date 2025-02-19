@@ -210,6 +210,7 @@ def train_dyna_gym_env(
         eval_env=[eval_env],
         logger=logger,
         log_dir=log_dir,
+        device=device,
         **config.Dyna.to_container(),
     )
     dyna.to(device)
@@ -272,6 +273,7 @@ def train_md_dyna_gym_env(
         eval_env=[eval_env],
         logger=logger,
         log_dir=log_dir,
+        device=device,
         **config.Dyna.to_container(),
     )
     dyna.to(device)

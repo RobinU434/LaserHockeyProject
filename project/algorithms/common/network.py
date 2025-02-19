@@ -1,5 +1,6 @@
 from typing import List
 
+import torch
 from torch import Tensor, nn
 from torch.nn import Linear, Module, Sequential
 
@@ -11,7 +12,7 @@ class FeedForwardNetwork(Module):
         output_dim: int,
         architecture: List[int] = None,
         activation_function: str = "ReLU",
-        device: str = "cpu",
+        device: str | torch.device = "cpu",
         final_activation: str = None,
         *args,
         **kwargs,

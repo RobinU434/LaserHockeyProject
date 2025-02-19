@@ -14,26 +14,39 @@ class WorldModel(nn.Module):
         architecture: List[int] = [128, 128],
         activation_func: str = "ReLU",
         lr: float = 1e-4,
+        device: str | torch.device = "cpu",
+        *args,
+        **kwargs,
     ):
         super(WorldModel, self).__init__()
         # build network layers
-        self.state_head = FeedForwardNetwork(state_dim, latent_dim, architecture=[128])
+        self._device = (
+            device if isinstance(device, torch.device) else torch.device(device)
+        )
+
+        self.state_head = FeedForwardNetwork(
+            state_dim, latent_dim, device=self._device, architecture=[128]
+        )
         self.action_head = FeedForwardNetwork(
-            action_dim, latent_dim, architecture=[128]
+            action_dim, latent_dim, device=self._device, architecture=[128]
         )
         self.hidden_model = FeedForwardNetwork(
             2 * latent_dim,
             latent_dim,
+            device=self._device,
             architecture=architecture,
             activation_function=activation_func,
         )
 
         self._next_state_pred = FeedForwardNetwork(
-            latent_dim, state_dim, architecture=[128]
+            latent_dim, state_dim, device=self._device, architecture=[128]
         )
-        self._reward_pred = FeedForwardNetwork(latent_dim, 1, architecture=[128])
+        self._reward_pred = FeedForwardNetwork(
+            latent_dim, 1, device=self._device, architecture=[128]
+        )
         self._done_pred = Sequential(
-            FeedForwardNetwork(latent_dim, 1, architecture=[128]), Sigmoid()
+            FeedForwardNetwork(latent_dim, 1, device=self._device, architecture=[128]),
+            Sigmoid(),
         )
 
         self.mse = nn.MSELoss()

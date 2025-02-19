@@ -39,6 +39,7 @@ class _DynaQ(_RLAlgorithm):
         gamma: float = 0.99,  # discount factor
         tau: float = 0.01,  # soft update parameter
         simulation_updates: int = 2,
+        device: str | torch.device = "cpu",
         *args,
         **kwargs,
     ):
@@ -49,10 +50,11 @@ class _DynaQ(_RLAlgorithm):
             eval_check_interval,
             save_interval,
             log_dir,
+            device,
             *args,
             **kwargs,
         )
-
+        
         self._batch_size = batch_size
         self._buffer_limit = buffer_limit
         self._start_buffer_size = start_buffer_size
@@ -236,8 +238,8 @@ class _DynaQ(_RLAlgorithm):
                 with torch.no_grad():
                     device_state = torch.from_numpy(state).to(self._device)[None]
                     device_action = torch.from_numpy(action).to(self._device)
-                    q_target = self.q_target.forward(device_state, device_action).cpu()
-                    q_value = self.q_net.forward(device_state, device_action).cpu()
+                    q_target = self.q_target.forward(device_state, device_action)
+                    q_value = self.q_net.forward(device_state, device_action)
                     stable_update += q_target.item() - q_value.item()
                     overestimation += torch.max(q_value).item()
 
@@ -287,6 +289,7 @@ class DynaQ(_DynaQ):
         gamma: float = 0.99,  # discount factor
         tau: float = 0.01,  # soft update parameter
         simulation_updates: int = 2,
+        device: str | torch.device = "cpu",
         *args,
         **kwargs,
     ):
@@ -304,6 +307,7 @@ class DynaQ(_DynaQ):
             gamma,
             tau,
             simulation_updates,
+            device,
             *args,
             **kwargs,
         )
@@ -315,15 +319,15 @@ class DynaQ(_DynaQ):
         self._n_actions = self._env.action_space.n
 
         self.q_net: QNet = QNet(
-            self._state_dim, self._n_actions, architecture=[128, 128]
+            self._state_dim, self._n_actions, architecture=[128, 128], device=self._device
         )
         self.q_target: QNet = QNet(
-            self._state_dim, self._n_actions, architecture=[128, 128]
+            self._state_dim, self._n_actions, architecture=[128, 128], device=self._device
         )
         self.q_target.load_state_dict(self.q_net.state_dict().copy())
 
         # note n_actions = action dim because of one hot encoding -> easiest encoding but others are possible
-        self.world_model = WorldModel(self._state_dim, self._n_actions)
+        self.world_model = WorldModel(self._state_dim, self._n_actions, device=self._device)
 
     def get_max_q(self, state):
         q_value = self.q_target.complete_forward(state.to(self._device))
@@ -423,6 +427,7 @@ class MultiDiscreteDynaQ(_DynaQ):
         tau=0.01,
         simulation_updates=2,
         mc_sample=10,  # switch it of by setting it None. Then do whole sweep
+        device: str | torch.device = "cpu",
         *args,
         **kwargs,
     ):
@@ -440,6 +445,7 @@ class MultiDiscreteDynaQ(_DynaQ):
             gamma,
             tau,
             simulation_updates,
+            device,
             *args,
             **kwargs,
         )
@@ -463,10 +469,10 @@ class MultiDiscreteDynaQ(_DynaQ):
         self._n_actions = action_space.nvec.prod()
 
         self.q_net: MultiDiscreteQNet = MultiDiscreteQNet(
-            self._state_dim, action_space.nvec
+            self._state_dim, action_space.nvec, device=self._device,
         )
         self.q_target: MultiDiscreteQNet = MultiDiscreteQNet(
-            self._state_dim, action_space.nvec
+            self._state_dim, action_space.nvec, device=self._device,
         )
         self.q_target.load_state_dict(self.q_net.state_dict().copy())
 
@@ -516,8 +522,8 @@ class MultiDiscreteDynaQ(_DynaQ):
         actions = actions[0]
         q_val = F.log_softmax(q_val, dim=0)
         idx = q_val.argmax(dim=0)
-        log_prob = q_val[idx.item()].numpy().item()
-        action = actions[idx.item()].numpy()
+        log_prob = q_val[idx.item()].cpu().numpy().item()
+        action = actions[idx.item()].cpu().numpy()
         return action, log_prob
 
     def save_checkpoint(self, episode_idx, path=None):
@@ -590,7 +596,7 @@ class MultiDiscreteDynaQAgent(_Agent):
         q_net: MultiDiscreteQNet,
         deterministic: bool = False,
         mc_sample: int = None,
-    ):
+):
         super().__init__()
         self.q_net = q_net
         self.deterministic = deterministic

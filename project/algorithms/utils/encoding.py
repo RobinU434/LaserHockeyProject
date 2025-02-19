@@ -1,16 +1,16 @@
 import numpy as np
 import torch
+from torch import Tensor
 
-
-def one_hot(x: torch.Tensor, n: int) -> torch.Tensor:
+def one_hot(x: Tensor, n: int) -> Tensor:
     """one hot encoding for
 
     Args:
-        x (torch.Tensor): (batch_size, ) vector of indices
+        x (Tensor): (batch_size, ) vector of indices
         n (int): max index
 
     Returns:
-        torch.Tensor: binary vector (batch_size, n)
+        Tensor: binary vector (batch_size, n)
     """
 
     action = x.int()
@@ -21,15 +21,15 @@ def one_hot(x: torch.Tensor, n: int) -> torch.Tensor:
     return res
 
 
-def multi_hot(x: torch.Tensor, nvec: torch.Tensor) -> torch.Tensor:
+def multi_hot(x: Tensor, nvec: Tensor) -> Tensor:
     """multihot encoding. Same
 
     Args:
-        x (torch.Tensor): (batch_size, feature_dim) in index space
-        nvec (torch.Tensor): max indices per feature dim (feature_dim, )
+        x (Tensor): (batch_size, feature_dim) in index space
+        nvec (Tensor): max indices per feature dim (feature_dim, )
 
     Returns:
-        torch.Tensor: binary vector (batch_size, sum(nvec))
+        Tensor: binary vector (batch_size, sum(nvec))
     """
 
     batch_size, _ = x.shape

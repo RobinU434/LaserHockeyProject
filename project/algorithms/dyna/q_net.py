@@ -14,6 +14,7 @@ class QNet(DiscreteQNet):
         architecture=[],
         activation_function="ReLU",
         lr: float = 1e-4,
+        device: str | torch.device = "cpu",
         *args,
         **kwargs
     ):
@@ -22,6 +23,7 @@ class QNet(DiscreteQNet):
             n_actions,
             architecture,
             activation_function,
+            device,
             *args,
             **kwargs,
         )
@@ -34,11 +36,14 @@ class QNet(DiscreteQNet):
     ) -> Dict[str, float]:
         state, action, _, _, _ = mini_batch
         action = action.int()
+
         if action.shape[1] == 1:
             action = action[:, 0]
 
-        device = target.device
-        state = state.to(device)
+        state = state.to(self._device)
+        action = action.to(self._device)
+        target = target.to(self._device)
+
         prediction = self.forward(state, action)
         # prediction = prediction[torch.arange(len(action)), action]
         loss = self.criterion.forward(prediction, target[:, 0])
@@ -60,6 +65,7 @@ class MultiDiscreteQNet(_MultiDiscreteQNet):
         latent_mlp_architecture=[64, 32],
         memory_optimization=False,
         lr: float = 1e-4,
+        device: str | torch.device = "cpu",
         *args,
         **kwargs
     ):
@@ -71,6 +77,7 @@ class MultiDiscreteQNet(_MultiDiscreteQNet):
             state_head_architecture,
             latent_mlp_architecture,
             memory_optimization,
+            device,
             *args,
             **kwargs,
         )
@@ -87,9 +94,12 @@ class MultiDiscreteQNet(_MultiDiscreteQNet):
         if action.shape[1] == 1:
             action = action[:, 0]
 
+        state = state.to(self._device)
+        action = action.to(self._device)
+        target = target.to(self._device)
+
         # get only diagonal values because  of one to one relation
         prediction = self.one2one_forward(state, action)
-        # print(prediction.shape, target.shape)
         loss = self.criterion.forward(prediction, target)
         self.optimizer.zero_grad()
         loss.backward()
