@@ -142,7 +142,7 @@ class _DynaQ(_RLAlgorithm):
             next_state.to(self._device),
             reward.to(self._device),
             done.to(self._device),
-        )           
+        )
         self.log_dict(info, episode_idx, prefix=self.get_name() + "/")
 
     def calculate_target(
@@ -164,7 +164,7 @@ class _DynaQ(_RLAlgorithm):
         """
         _, _, next_state, reward, done = mini_batch
         next_state = next_state.to(self._device)
-        reward = reward.to(self._device)            
+        reward = reward.to(self._device)
         done = done.to(self._device)
         with torch.no_grad():
             q_next_max = self.get_max_q(next_state)
@@ -211,9 +211,10 @@ class _DynaQ(_RLAlgorithm):
                 )
                 # Discrete vs MultiDiscrete
                 next_state, reward, done, truncated, _ = self._env.step(action)
+                
                 if isinstance(action, int):
                     action = np.array([action], dtype=int)
-
+                
                 self.memory.put(
                     observation=torch.from_numpy(state),
                     action=torch.from_numpy(action),
@@ -231,15 +232,13 @@ class _DynaQ(_RLAlgorithm):
 
                 score += reward
                 episode_steps += 1
-                log_probs += log_prob.item()
+                log_probs += log_prob
                 with torch.no_grad():
-                    int_action = action.item()
                     device_state = torch.from_numpy(state).to(self._device)
-                    q_target = self.q_target.complete_forward(device_state)
-                    q_value = self.q_net.complete_forward(device_state)
-                    stable_update += (
-                        q_target[int_action].item() - q_value[int_action].item()
-                    )
+                    device_action = torch.from_numpy(action).to(self._device)
+                    q_target = self.q_target.forward(device_state, device_action).cpu()
+                    q_value = self.q_net.forward(device_state, device_action).cpu()
+                    stable_update += q_target.item() - q_value.item()
                     overestimation += torch.max(q_value).item()
 
                 state = next_state
@@ -359,6 +358,7 @@ class DynaQ(_DynaQ):
             action_log_probs = self.q_net.action_log_probs(state.to(self._device))
         action = torch.argmax(action_log_probs).item()
         log_prob = action_log_probs[action]
+        log_prob = log_prob.cpu().item()
         return action, log_prob
 
     def save_checkpoint(self, episode_idx, path=None):
@@ -484,7 +484,6 @@ class MultiDiscreteDynaQ(_DynaQ):
 
         if len(action.shape) == 1:
             action = action[None]
-
         nvec = torch.from_numpy(self._env.action_space.nvec).int()
         action = multi_hot(action.int(), nvec).float()
         return action
@@ -507,15 +506,18 @@ class MultiDiscreteDynaQ(_DynaQ):
             return action, log_prob
 
         # greedy action
-        if self._mc_sample is None:
-            q_val, actions = self.q_net.complete_forward(state)
-        else:
-            q_val, actions = self.q_net.mc_forward(state, self._mc_sample)
+        with torch.no_grad():
+            if self._mc_sample is None:
+                q_val, actions = self.q_net.complete_forward(state)
+            else:
+                q_val, actions = self.q_net.mc_forward(state, self._mc_sample)
+                print(q_val.shape, actions.shape)
         q_val = q_val[0]
+        actions = actions[0]
         q_val = F.log_softmax(q_val, dim=0)
         idx = q_val.argmax(dim=0)
-        log_prob = q_val[idx]
-        action = actions[idx]
+        log_prob = q_val[idx.item()].numpy().item()
+        action = actions[idx.item()].numpy()
         return action, log_prob
 
     def save_checkpoint(self, episode_idx, path=None):
