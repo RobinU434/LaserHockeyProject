@@ -15,7 +15,9 @@ from: ubuntu:24.04
 
     pip install "hockey @ git+https://git@github.com/martius-lab/hockey-env.git"
 
-    pip install matplotlib numpy box2d-py pygame gymnasium tensorboard tensorboardx notebook tqdm config2class jupyterlab ipympl torch hydra-core stable-baselines3 h5py pandas pyargwriter
+    pip install matplotlib numpy box2d-py pygame gymnasium tensorboard tensorboardx notebook tqdm jupyterlab ipympl torch hydra-core stable-baselines3 h5py pandas einops
+    pip install pyargwriter
+    pip install config2class        
 
     # cleanup
     apt-get clean
