@@ -32,6 +32,19 @@ class _QNet(nn.Module):
         """
         raise NotImplementedError
 
+    def forward(self, state: Tensor, action: Tensor) -> Tensor:
+        """evaluate the how good an action in a given state state is
+
+        Args:
+            state (Tensor): state description ((batch_dim), state_dim)
+            action (Tensor): action description ((batch_dim), action_dim)
+
+
+        Returns:
+            Tensor: ((batch_dim), 1)
+        """
+        raise NotImplementedError
+
 
 class VectorizedQNet(_QNet):
     def __init__(
@@ -173,10 +186,18 @@ class MultiDiscreteQNet(VectorizedQNet):
         grids = np.meshgrid(*[range(i) for i in self.nvec], indexing="ij")
         self._all_actions = np.vstack(list(map(np.ravel, grids))).T
 
+    def forward(self, state, action):
+        if len(action.shape) == 1:
+            action = self._encode_actions(action[None])[0]
+        else:
+            action = self._encode_actions(action)
+
+        return super().forward(state, action)
+
     def _encode_actions(self, actions: Tensor) -> Tensor:
         return multi_hot(actions, torch.from_numpy(self.nvec)).float()
 
-    def forward(self, state: Tensor, actions: Tensor) -> Tensor:
+    def pair_forward(self, state: Tensor, actions: Tensor) -> Tensor:
         """
 
         Args:
@@ -246,8 +267,14 @@ class MultiDiscreteQNet(VectorizedQNet):
 
         if len(state.shape) == 1:
             state = state[None]
+        batch_size = len(state)
 
-        return self.forward(state, actions), self._all_actions[idx]
+        device = state.device
+        np_actions = actions
+        np_actions = np_actions[None].repeat(batch_size, axis=0)
+        actions = torch.from_numpy(actions).to(device)
+
+        return self.pair_forward(state, actions), torch.from_numpy(np_actions)
 
     def complete_forward(self, state: Tensor) -> Tuple[Tensor, Tensor]:
         """_summary_
@@ -263,9 +290,10 @@ class MultiDiscreteQNet(VectorizedQNet):
         if len(state.shape) == 1:
             state = state[None]
 
-        all_actions = self._encode_actions(self._all_actions)
-        out = self.forward(state, all_actions)
-        all_actions = self._all_actions[None].repeat(len(state), 1, 1)
+        # all_actions = self._encode_actions(self._all_actions)
+        device = state.device
+        out = self.pair_forward(state, torch.from_numpy(self._all_actions).to(device))
+        all_actions = torch.from_numpy(self._all_actions)[None].repeat(len(state), 1, 1)
         return out, all_actions
 
 
