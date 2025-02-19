@@ -37,6 +37,8 @@ class QNet(DiscreteQNet):
         if action.shape[1] == 1:
             action = action[:, 0]
 
+        device = target.device
+        state = state.to(device)
         prediction = self.forward(state, action)
         # prediction = prediction[torch.arange(len(action)), action]
         loss = self.criterion.forward(prediction, target[:, 0])

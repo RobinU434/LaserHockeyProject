@@ -117,7 +117,7 @@ class _DynaQ(_RLAlgorithm):
             action_enc = self.encode_action(action)
             with torch.no_grad():
                 next_state_pred, reward_pred, done_pred = self.world_model.forward(
-                    state, action_enc
+                    state.to(self._device), action_enc.to(self._device)
                 )
             minibatch = state, action, next_state_pred, reward_pred, done_pred
             target = self.calculate_target(minibatch)
@@ -136,7 +136,13 @@ class _DynaQ(_RLAlgorithm):
     ):
         state, action, next_state, reward, done = mini_batch
         action = self.encode_action(action)
-        info = self.world_model.train_net(state, action, next_state, reward, done)
+        info = self.world_model.train_net(
+            state.to(self._device),
+            action.to(self._device),
+            next_state.to(self._device),
+            reward.to(self._device),
+            done.to(self._device),
+        )           
         self.log_dict(info, episode_idx, prefix=self.get_name() + "/")
 
     def calculate_target(
@@ -157,6 +163,9 @@ class _DynaQ(_RLAlgorithm):
             Tensor: td target. (batch_size, 1)
         """
         _, _, next_state, reward, done = mini_batch
+        next_state = next_state.to(self._device)
+        reward = reward.to(self._device)            
+        done = done.to(self._device)
         with torch.no_grad():
             q_next_max = self.get_max_q(next_state)
 
@@ -197,7 +206,9 @@ class _DynaQ(_RLAlgorithm):
             truncated = False
             state, _ = self._env.reset()
             while not (done or truncated):
-                action, log_prob = self.get_action(torch.from_numpy(state), episode_idx)
+                action, log_prob = self.get_action(
+                    torch.from_numpy(state).to(self._device), episode_idx
+                )
                 # Discrete vs MultiDiscrete
                 next_state, reward, done, truncated, _ = self._env.step(action)
                 if isinstance(action, int):
@@ -223,14 +234,13 @@ class _DynaQ(_RLAlgorithm):
                 log_probs += log_prob.item()
                 with torch.no_grad():
                     int_action = action.item()
-                    q_target = self.q_target.complete_forward(torch.from_numpy(state))
-                    q_value = self.q_net.complete_forward(torch.from_numpy(state))
+                    device_state = torch.from_numpy(state).to(self._device)
+                    q_target = self.q_target.complete_forward(device_state)
+                    q_value = self.q_net.complete_forward(device_state)
                     stable_update += (
                         q_target[int_action].item() - q_value[int_action].item()
                     )
-                    overestimation += torch.max(
-                        self.q_net.complete_forward(torch.from_numpy(state))
-                    ).item()
+                    overestimation += torch.max(q_value).item()
 
                 state = next_state
                 self.total_steps += 1
@@ -317,7 +327,7 @@ class DynaQ(_DynaQ):
         self.world_model = WorldModel(self._state_dim, self._n_actions)
 
     def get_max_q(self, state):
-        q_value = self.q_target.complete_forward(state)
+        q_value = self.q_target.complete_forward(state.to(self._device))
         q_max = torch.max(q_value, dim=-1, keepdim=True)[0]
         return q_max
 
@@ -336,7 +346,7 @@ class DynaQ(_DynaQ):
         a = a.float()
         return a
 
-    def get_action(self, state: np.ndarray, episode_idx: int) -> Tuple[int, float]:
+    def get_action(self, state: torch.Tensor, episode_idx: int) -> Tuple[int, float]:
         # decay epsilon exponentially
         epsilon = self._get_epsilon(episode_idx)
         if np.random.uniform() <= epsilon:  # random action
@@ -345,7 +355,8 @@ class DynaQ(_DynaQ):
             return action, log_prob
 
         # greedy action
-        action_log_probs = self.q_net.action_log_probs(state)
+        with torch.no_grad():
+            action_log_probs = self.q_net.action_log_probs(state.to(self._device))
         action = torch.argmax(action_log_probs).item()
         log_prob = action_log_probs[action]
         return action, log_prob
