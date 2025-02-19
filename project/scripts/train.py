@@ -1,14 +1,14 @@
 from pathlib import Path
 import gymnasium
 import hydra
-from gymnasium.spaces import Box, Discrete
+from gymnasium.spaces import Box, Discrete, MultiDiscrete
 import numpy as np
 from omegaconf import DictConfig
 from stable_baselines3.common.logger import configure
 import logging
 
 from project.algorithms.common.logger import CSVLogger, TensorBoardLogger
-from project.algorithms.dyna.dyna import DynaQ
+from project.algorithms.dyna.dyna import DynaQ, MultiDiscreteDynaQ
 from project.algorithms.env_wrapper import (
     AffineActionTransform,
     DiscreteActionWrapper,
@@ -27,6 +27,7 @@ from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
 from project.environment.single_player_env import SinglePlayerHockeyEnv
 from project.utils.configs.train_sac_config import Config as SACConfig
 from project.utils.configs.train_dyna_config import Config as DynaConfig
+from project.utils.configs.train_md_dyna_config import Config as MDDynaConfig
 from gymnasium.wrappers import NormalizeReward
 
 # from project.environment.hockey_env.hdf5_replay_buffer import HDF5ReplayBuffer
@@ -135,7 +136,7 @@ def train_sac_gym_env(
             "LunarLander-v3", continuous=True, max_episode_steps=max_steps
         )
     # train_env = TanhWrapper(train_env, 1000)
-    # train_env = SymLogWrapper(train_env)
+    train_env = SymLogWrapper(train_env)
     eval_env = EvalGymSuite(train_env, n_episodes=10)
 
     action_space: Box = train_env.action_space
@@ -196,8 +197,7 @@ def train_dyna_gym_env(
         )
 
     eval_env = EvalGymSuite(train_env, n_episodes=10)
-
-    # train_env = SymLogWrapper(train_env)
+    train_env = SymLogWrapper(train_env)
 
     # build algorithm
     log_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
@@ -206,6 +206,65 @@ def train_dyna_gym_env(
     logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
 
     dyna = DynaQ(
+        env=train_env,
+        eval_env=[eval_env],
+        logger=logger,
+        log_dir=log_dir,
+        **config.to_container(),
+    )
+    dyna.to(device)
+
+    if not quiet:
+        print("Train on environment: ", gym_env)
+        print(config)
+        print(dyna)
+
+    if not force:
+        question = input("Would you like to start to train? [Y, n]")
+        if not (question is None or question.lower().strip() in ["", "y", "yes"]):
+            print("Abort training")
+            return
+
+    # train algorithm
+    dyna.train(config.episode_budget, verbose=not quiet)
+
+
+def train_md_dyna_gym_env(
+    config: DictConfig,
+    force: bool,
+    gym_env: str,
+    max_steps: int = 200,
+    n_actions: int = 10,
+    device: str = "cpu",
+    quiet: bool = False,
+):
+    config: MDDynaConfig = MDDynaConfig.from_dict_config(config)
+    # build envs (train, eval env)
+    train_env = gymnasium.make(gym_env, max_episode_steps=max_steps)
+    if isinstance(train_env.action_space, Box):
+        assert train_env.action_space.shape == (
+            1,
+        ), "For Dyna you need a one dimension in the action space"
+        nvec = np.ones(train_env.action_space.shape) * n_actions
+        train_env = MultiDiscreteActionWrapper(train_env, nvec)
+    else:
+        assert isinstance(
+            train_env.action_space, MultiDiscrete
+        ), "asserted MultiDiscrete action space in  given environment"
+        logging.warning(
+            f"Argument n_actions will be ignored. Instead use nvec from given actions space: n={train_env.action_space.nvec}"
+        )
+
+    eval_env = EvalGymSuite(train_env, n_episodes=10)
+    # train_env = SymLogWrapper(train_env)
+
+    # build algorithm
+    log_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
+    subfolder_name = gym_env.split("-")[0]
+    log_dir = log_dir.parent / subfolder_name / log_dir.name
+    logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
+
+    dyna = MultiDiscreteDynaQ(
         env=train_env,
         eval_env=[eval_env],
         logger=logger,
