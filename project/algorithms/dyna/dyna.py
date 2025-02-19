@@ -234,7 +234,7 @@ class _DynaQ(_RLAlgorithm):
                 episode_steps += 1
                 log_probs += log_prob
                 with torch.no_grad():
-                    device_state = torch.from_numpy(state).to(self._device)
+                    device_state = torch.from_numpy(state).to(self._device)[None]
                     device_action = torch.from_numpy(action).to(self._device)
                     q_target = self.q_target.forward(device_state, device_action).cpu()
                     q_value = self.q_net.forward(device_state, device_action).cpu()
