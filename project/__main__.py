@@ -86,7 +86,7 @@ def execute(args: dict) -> bool:
                 config_var_name="config",
                 version_base=None,
                 config_path=str(Path.cwd().joinpath("config")),
-                config_name="train_dyna.yaml",
+                config_name="train_md_dyna.yaml",
             )
 
         case _:

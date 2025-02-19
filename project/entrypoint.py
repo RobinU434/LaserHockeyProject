@@ -90,7 +90,7 @@ class Entrypoint:
 
         render_dyna(checkpoint, gym_env, deterministic, max_steps)
 
-    @add_hydra("config", None, config_path="config", config_name="train_dyna.yaml")
+    @add_hydra("config", None, config_path="config", config_name="train_md_dyna.yaml")
     def train_md_dyna_gym(
         self,
         config: DictConfig,

@@ -210,7 +210,7 @@ def train_dyna_gym_env(
         eval_env=[eval_env],
         logger=logger,
         log_dir=log_dir,
-        **config.to_container(),
+        **config.Dyna.to_container(),
     )
     dyna.to(device)
 
@@ -240,11 +240,14 @@ def train_md_dyna_gym_env(
 ):
     config: MDDynaConfig = MDDynaConfig.from_dict_config(config)
     # build envs (train, eval env)
-    train_env = gymnasium.make(gym_env, max_episode_steps=max_steps)
+    kwargs = {}
+    if "LunarLander" in gym_env:
+        kwargs["continuous"] = True
+    train_env = gymnasium.make(gym_env, max_episode_steps=max_steps, **kwargs)
     if isinstance(train_env.action_space, Box):
-        assert train_env.action_space.shape == (
-            1,
-        ), "For Dyna you need a one dimension in the action space"
+        assert (
+            len(train_env.action_space.shape) > 0
+        ), "For Multidiscrete Dyna you need a one dimensional action space"
         nvec = np.ones(train_env.action_space.shape) * n_actions
         train_env = MultiDiscreteActionWrapper(train_env, nvec)
     else:
@@ -263,13 +266,13 @@ def train_md_dyna_gym_env(
     subfolder_name = gym_env.split("-")[0]
     log_dir = log_dir.parent / subfolder_name / log_dir.name
     logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
-
+    
     dyna = MultiDiscreteDynaQ(
         env=train_env,
         eval_env=[eval_env],
         logger=logger,
         log_dir=log_dir,
-        **config.to_container(),
+        **config.Dyna.to_container(),
     )
     dyna.to(device)
 
