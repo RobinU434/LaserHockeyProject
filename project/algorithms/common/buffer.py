@@ -21,6 +21,27 @@ class _ReplayBuffer(Dataset):
 
         self._sampling_weights = Iterable[float]
 
+    def batch_put(
+        self,
+        observation: Tensor,
+        action: Tensor,
+        next_observation: Tensor,
+        reward: Tensor,
+        done: Tensor,
+        sampling_weight: Tensor | float = None,
+    ):
+        """put batch of observations into replay buffer
+
+        Args:
+            observation (Tensor): _description_
+            action (Tensor): _description_
+            next_observation (Tensor): _description_
+            reward (Tensor): _description_
+            done (Tensor): _description_
+            sampling_weight (Tensor | float, optional): _description_. Defaults to None.
+        """
+        raise NotImplementedError
+
     def put(
         self,
         observation: Tensor,
@@ -96,27 +117,26 @@ class ReplayBuffer(_ReplayBuffer):
         self._dones: deque = deque(maxlen=buffer_limit)
         self._sampling_weights: deque = deque(maxlen=buffer_limit)
 
+    def batch_put(
+        self, observation, action, next_observation, reward, done, sampling_weight=None
+    ):
+        assert (
+            action.shape[0] == observation.shape[0]
+            and action.shape[0] == reward.shape[0]
+            and action.shape[0] == next_observation.shape[0]
+            and action.shape[0] == done.shape[0]
+        ), "If you add multiple actions, observations and rewards at once then add the same amount of each one"
+
+        self._actions.extend(list(action))
+        self._obs.extend(list(observation))
+        self._next_obs.extend(list(next_observation))
+        self._rewards.extend(list(reward))
+        self._dones.extend(list(done))
+        self._sampling_weights.extend(list(sampling_weight))
+
     def put(
         self, observation, action, next_observation, reward, done, sampling_weight=None
     ):
-        # print(observation.shape, action.shape, next_observation.shape)
-        if len(action.shape) == 2:
-            assert (
-                action.shape[0] == observation.shape[0]
-                and action.shape[0] == reward.shape[0]
-                and action.shape[0] == next_observation.shape[0]
-                and action.shape[0] == done.shape[0]
-            ), "If you add multiple actions, observations and rewards at once then add the same amount of each one"
-
-            self._actions.extend(list(action))
-            self._obs.extend(list(observation))
-            self._next_obs.extend(list(next_observation))
-            self._rewards.extend(list(reward))
-            self._dones.extend(list(done))
-            self._sampling_weights.extend(list(sampling_weight))
-
-            return
-
         self._obs.append(observation)
         self._actions.append(action)
         self._next_obs.append(next_observation)
@@ -153,7 +173,7 @@ class ReplayBuffer(_ReplayBuffer):
         )
 
     def __len__(self) -> int:
-        return len(self._actions)
+        return len(self._obs)
 
 
 class RigidReplayBuffer(_ReplayBuffer):
