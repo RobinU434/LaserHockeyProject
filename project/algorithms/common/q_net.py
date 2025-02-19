@@ -253,7 +253,7 @@ class MultiDiscreteQNet(VectorizedQNet):
             state (Tensor): _description_
             n_samples (int): how many samples
 
-        Returns:
+        Returns:    
             Tuple[Tensor, Tensor]:
                 - q_val (batch_size, n_actions, 1)
                 - actions (batch_size, n_actions, action_dim)
