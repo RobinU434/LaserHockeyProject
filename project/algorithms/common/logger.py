@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import logging
 from pathlib import Path
 from typing import Dict
 
@@ -45,6 +46,9 @@ class CSVLogger(_Logger):
         self._data = []
 
     def log_scalar(self, name, value, step):
+        if not isinstance(value, (float, int)):
+            logging.error(f"Value to name: {name} is not a float. Not able to log. ({value=}({type(value)}))")
+            return
         self._data.append({name: value, "step": step})
 
     def save(self):
