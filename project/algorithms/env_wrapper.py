@@ -132,13 +132,13 @@ class MD2DiscreteActionWrapper(ActionWrapper):
         super().__init__(env)
 
         action_space: MultiDiscrete = env.action_space
-        nvec = action_space.nvec
-        self.num_actions = np.prod(nvec)
+        self.nvec = action_space.nvec
+        self.num_actions = np.prod(self.nvec)
         self.action_space = Discrete(self.num_actions)
 
     def action(self, action):
         """Converts a discrete action index to a MultiDiscrete action tuple."""
-        return np.array(np.unravel_index(action, self.action_sizes), dtype=np.int32)
+        return np.array(np.unravel_index(action, self.nvec), dtype=np.int32)
 
 
 class AffineActionTransform(ActionWrapper):
