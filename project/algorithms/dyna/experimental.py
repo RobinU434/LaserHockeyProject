@@ -5,7 +5,7 @@ from torch import optim
 from torch.nn import functional as F
 
 
-class ERDyna(DynaQ):
+class ERDynaQ(DynaQ):
     """entropy regularized dyna.
 
     don't set a decay rate for epsilon greedy policies.

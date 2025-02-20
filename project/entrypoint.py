@@ -106,3 +106,20 @@ class Entrypoint:
         train_md_dyna_gym_env(
             config, force, gym_env, max_steps, n_actions, device, quiet
         )
+
+    @add_hydra("config", None, config_path="config", config_name="train_er_dyna.yaml")
+    def train_er_dyna_gym(
+        self,
+        config: DictConfig,
+        gym_env: str,
+        n_actions: int = 10,
+        force: bool = False,
+        quiet: bool = False,
+        max_steps: int = 200,
+        device: str = "cpu",
+    ):
+        from project.scripts.train import train_er_dyna_gym_env
+
+        train_er_dyna_gym_env(
+            config, force, gym_env, max_steps, n_actions, device, quiet
+        )

@@ -89,6 +89,17 @@ def execute(args: dict) -> bool:
                 config_name="train_md_dyna.yaml",
             )
 
+        case "train-er-dyna-gym":
+            api.hydra_plugin.hydra_wrapper(
+                module.train_er_dyna_gym,
+                args,
+                command_parser["train_er_dyna_gym"],
+                config_var_name="config",
+                version_base=None,
+                config_path=str(Path.cwd().joinpath("config")),
+                config_name="train_er_dyna.yaml",
+            )
+
         case _:
             return False
 
