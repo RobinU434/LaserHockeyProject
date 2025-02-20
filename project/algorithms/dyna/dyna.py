@@ -488,7 +488,7 @@ class MultiDiscreteDynaQ(_DynaQ):
         )
         self.q_target.load_state_dict(self.q_net.state_dict().copy())
 
-        self.world_model = WorldModel(self._state_dim, self._action_dim)
+        self.world_model = WorldModel(self._state_dim, self._action_dim, device=self._device    )
 
     def encode_action(self, action: Tensor) -> Tensor:
         """converts the discrete action into an action encoding
