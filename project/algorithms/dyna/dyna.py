@@ -194,7 +194,7 @@ class _DynaQ(_RLAlgorithm):
 
         iterator = range(n_episodes)
         if verbose:
-            iterator = tqdm(iterator, desc="train sac", unit="episodes")
+            iterator = tqdm(iterator, desc=f"train {self.get_name()}", unit="episodes")
 
         self.total_steps = 0
         for episode_idx in iterator:
