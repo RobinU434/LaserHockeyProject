@@ -36,7 +36,7 @@ class SymLogWrapper(RewardWrapper):
         return reward / absolute * math.log(absolute + 1)
 
 
-class DiscreteActionWrapper(ActionWrapper):
+class Box2DiscreteActionWrapper(ActionWrapper):
     def __init__(self, env, n_actions: int):
         super().__init__(env)
         assert isinstance(
@@ -75,7 +75,7 @@ class DiscreteActionWrapper(ActionWrapper):
         return self.interpolation
 
 
-class MultiDiscreteActionWrapper(ActionWrapper):
+class Box2MultiDiscreteActionWrapper(ActionWrapper):
     def __init__(self, env, nvec: int | np.ndarray):
         super().__init__(env)
         assert isinstance(

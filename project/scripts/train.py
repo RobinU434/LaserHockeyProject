@@ -11,8 +11,8 @@ from project.algorithms.common.logger import CSVLogger, TensorBoardLogger
 from project.algorithms.dyna.dyna import DynaQ, MultiDiscreteDynaQ
 from project.algorithms.env_wrapper import (
     AffineActionTransform,
-    DiscreteActionWrapper,
-    MultiDiscreteActionWrapper,
+    Box2DiscreteActionWrapper,
+    Box2MultiDiscreteActionWrapper,
     SymLogWrapper,
     TanhWrapper,
 )
@@ -187,7 +187,7 @@ def train_dyna_gym_env(
         assert train_env.action_space.shape == (
             1,
         ), "For Dyna you need a one dimension in the action space"
-        train_env = DiscreteActionWrapper(train_env, n_actions)
+        train_env = Box2DiscreteActionWrapper(train_env, n_actions)
     else:
         assert isinstance(
             train_env.action_space, Discrete
@@ -250,7 +250,7 @@ def train_md_dyna_gym_env(
             len(train_env.action_space.shape) > 0
         ), "For Multidiscrete Dyna you need a one dimensional action space"
         nvec = np.ones(train_env.action_space.shape) * n_actions
-        train_env = MultiDiscreteActionWrapper(train_env, nvec)
+        train_env = Box2MultiDiscreteActionWrapper(train_env, nvec)
     else:
         assert isinstance(
             train_env.action_space, MultiDiscrete

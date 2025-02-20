@@ -5,7 +5,7 @@ import gymnasium
 from gymnasium.spaces import Box, Discrete
 
 from project.algorithms.dyna.dyna import DynaQ
-from project.algorithms.env_wrapper import DiscreteActionWrapper
+from project.algorithms.env_wrapper import Box2DiscreteActionWrapper
 from project.algorithms.sac.sac import SAC
 from project.environment.hockey_env.hockey.hockey_env import BasicOpponent
 from project.environment.single_player_env import SinglePlayerHockeyEnv
@@ -65,7 +65,7 @@ def render_dyna(
         assert env.action_space.shape == (
             1,
         ), "For Dyna you need a one dimension in the action space"
-        env = DiscreteActionWrapper(env, dyna._n_actions)
+        env = Box2DiscreteActionWrapper(env, dyna._n_actions)
     else:
         assert isinstance(
             env.action_space, Discrete
