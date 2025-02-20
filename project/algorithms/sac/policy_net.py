@@ -117,7 +117,7 @@ class PolicyNet(nn.Module):
 
         # TODO(RobunU434): add post processor functionality in here
         if self.action_scale is not None:
-            action = distribution.squish(action) * self.action_scale
+            action = distribution.squish(action) * self.action_scale / 2 #action scale is the span: action_space.high -action_space.low
         action = action + self.action_bias
         return action, real_log_prob
 

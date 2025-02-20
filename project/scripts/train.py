@@ -60,7 +60,7 @@ def train_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
     eval_env = EvalHockeySuite(**config.SelfPlay.Env.to_container())
 
     train_env = AffineActionTransform(
-        train_env, np.array([1, 1, 1, 0.5]), np.array([1, 1, 1, 0.5])
+        train_env, np.array([1, 1, 1, 0.5]), np.array([0,0,0, 0.5])
     )
 
     # ititialize HDF5ReplayBuffer (save interactions)
