@@ -1,17 +1,17 @@
 #!/bin/bash
 
-#SBATCH --job-name=MD-Dyna-LunarLander
+#SBATCH --job-name=ER-Dyna-LunarLander
 
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-cpu=3G
 #SBATCH --gres=gpu:1080ti:1
 
-#SBATCH --partition=test
-#SBATCH --time=00:15:00
+#SBATCH --partition=day
+#SBATCH --time=04:00:00
 # "minutes:seconds", "hours:minutes:seconds", "days-hours", "days-hours:minutes" and "days-hours:minutes:seconds"
 
-#SBATCH --error=/home/stud143/projects/LaserHockeyProject/logs/MD_Dyna_LunarLander.err
-#SBATCH --output=/home/stud143/projects/LaserHockeyProject/logs/MD_Dyna_LunarLander.out
+#SBATCH --error=/home/stud143/projects/LaserHockeyProject/logs/ER_Dyna_LunarLander.err
+#SBATCH --output=/home/stud143/projects/LaserHockeyProject/logs/ER_Dyna_LunarLander.out
 
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=robin.uhrich@student.uni-tuebingen.de
