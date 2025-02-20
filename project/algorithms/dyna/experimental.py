@@ -30,6 +30,7 @@ class ERDynaQ(DynaQ):
         gamma=0.99,
         tau=0.01,
         simulation_updates=2,
+        device="cpu",
         *args,
         **kwargs
     ):
@@ -47,6 +48,7 @@ class ERDynaQ(DynaQ):
             gamma,
             tau,
             simulation_updates,
+            device,
             *args,
             **kwargs
         )
@@ -66,9 +68,9 @@ class ERDynaQ(DynaQ):
         
         action_log_probs = F.log_softmax(torch.exp(self.log_alpha) * q_val, dim=-1)
         action = np.random.choice(
-            len(action_log_probs), p=torch.exp(action_log_probs).detach().numpy()
+            len(action_log_probs), p=torch.exp(action_log_probs).cpu().detach().numpy()
         )
-        log_prob = action_log_probs[action].item()
+        log_prob = action_log_probs[action].cpu().item()
 
         return action, log_prob
 
@@ -77,13 +79,10 @@ class ERDynaQ(DynaQ):
 
         # optimize alpha
         alpha = torch.exp(self.log_alpha)
-        (
-            state,
-            _,
-            _,
-            _,
-            _,
-        ) = mini_batch
+        state = mini_batch[0]
+        state = state.to(self._device)
+
+
         q_val = self.q_net.complete_forward(state)
         action_prob = F.softmax(alpha * q_val, dim=-1)
         action_prob = action_prob + 1e-18  # avoid 0
