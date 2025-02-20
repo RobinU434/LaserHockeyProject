@@ -256,7 +256,10 @@ def train_er_dyna_gym_env(
 
     config: ERDynaConfig = ERDynaConfig.from_dict_config(config)
     # build envs (train, eval env)
-    train_env = gymnasium.make(gym_env, max_episode_steps=max_steps)
+    env_kwarg = {}
+    if "LunarLander" in gym_env:
+        env_kwarg["continuous"] = True
+    train_env = gymnasium.make(gym_env, max_episode_steps=max_steps, **env_kwarg)
     if (
         isinstance(train_env.action_space, Box)
         and train_env.action_space.shape == (1,)
@@ -265,8 +268,8 @@ def train_er_dyna_gym_env(
         train_env = Box2DiscreteActionWrapper(train_env, n_actions)
     if (
         isinstance(train_env.action_space, Box)
-        and train_env.action_space.shape == (1,)
-        and train_env.action_space[0] > 1
+        and len(train_env.action_space.shape) == 1
+        and train_env.action_space.shape[0] > 1
     ):
         nvec = np.ones(train_env.action_space.shape) * n_actions
         train_env = Box2MultiDiscreteActionWrapper(train_env, nvec)
