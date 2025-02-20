@@ -177,9 +177,9 @@ class SAC(_RLAlgorithm):
             Tensor: td target (batch_size,)
         """
         _, _, s_prime, r, done = mini_batch
-        s_prime = s_prime.to(self._device)
-        r = r.to(self._device)
-        done = done.to(self._device)
+        s_prime = s_prime.to(self._device).float()
+        r = r.to(self._device).float()
+        done = done.to(self._device).float()
 
         with torch.no_grad():
             a_prime, log_prob = self._pi.forward(s_prime)
