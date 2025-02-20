@@ -39,6 +39,9 @@ class SymLogWrapper(RewardWrapper):
 class Box2DiscreteActionWrapper(ActionWrapper):
     def __init__(self, env, n_actions: int):
         super().__init__(env)
+
+        # TODO: make this more flexible and also accepts not only one dimensional Boxes...
+        # TODO: use an embedding of Box2MultidiscreteActionWrapper and MD2DiscreteActionWrapper
         assert isinstance(
             self.env.action_space, Box
         ), "given env action space has to be continuous"
@@ -122,6 +125,20 @@ class Box2MultiDiscreteActionWrapper(ActionWrapper):
             for idx in range(self.action_dim)
         ]
         return res
+
+
+class MD2DiscreteActionWrapper(ActionWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+
+        action_space: MultiDiscrete = env.action_space
+        nvec = action_space.nvec
+        self.num_actions = np.prod(nvec)
+        self.action_space = Discrete(self.num_actions)
+
+    def action(self, action):
+        """Converts a discrete action index to a MultiDiscrete action tuple."""
+        return np.array(np.unravel_index(action, self.action_sizes), dtype=np.int32)
 
 
 class AffineActionTransform(ActionWrapper):
