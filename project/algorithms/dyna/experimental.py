@@ -91,7 +91,8 @@ class ERDynaQ(DynaQ):
         action_prob = action_prob + 1e-18  # avoid 0
         entropy = -torch.sum(action_prob * torch.log(action_prob))
 
-        loss = (entropy - self.target_entropy)**2
+        # last term is regularization so we want to have the target entropy emerged from the raw distribution
+        loss = (entropy - self.target_entropy)**2  + (1 - alpha)**2
         self.log_alpha_optimizer.zero_grad()
         loss.backward()
         self.log_alpha_optimizer.step()
