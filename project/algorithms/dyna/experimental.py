@@ -61,13 +61,14 @@ class ERDynaQ(DynaQ):
         self.log_alpha_optimizer = optim.AdamW([self.log_alpha], lr=lr_alpha)
 
     def get_action(self, state, episode_idx):
-        q_val = self.q_net.complete_forward(state)
-        action_log_probs = F.log_softmax(torch.exp(self.log_alpha) * q_val)
-
+        with torch.no_grad():
+            q_val = self.q_net.complete_forward(state)
+        
+        action_log_probs = F.log_softmax(torch.exp(self.log_alpha) * q_val, dim=-1)
         action = np.random.choice(
             len(action_log_probs), p=torch.exp(action_log_probs).detach().numpy()
         )
-        log_prob = action_log_probs[action]
+        log_prob = action_log_probs[action].item()
 
         return action, log_prob
 
