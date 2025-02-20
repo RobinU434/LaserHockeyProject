@@ -93,6 +93,6 @@ class ERDynaQ(DynaQ):
         loss.backward()
         self.log_alpha_optimizer.step()
 
-self.log_scalar(self.get_name() + "/epsilon_loss", loss     .item(), episode_idx)
+        self.log_scalar(self.get_name() + "/epsilon_loss", loss.item(), episode_idx)
         self.log_scalar(self.get_name() + "/target_entropy", self.target_entropy, episode_idx)
         self.log_scalar(self.get_name() + "/entropy", entropy.detach().item(), episode_idx)
