@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
+
 def one_hot(x: Tensor, n: int) -> Tensor:
     """one hot encoding for
 

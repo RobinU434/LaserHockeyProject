@@ -54,7 +54,7 @@ class _DynaQ(_RLAlgorithm):
             *args,
             **kwargs,
         )
-        
+
         self._batch_size = batch_size
         self._buffer_limit = buffer_limit
         self._start_buffer_size = start_buffer_size
@@ -213,10 +213,10 @@ class _DynaQ(_RLAlgorithm):
                 )
                 # Discrete vs MultiDiscrete
                 next_state, reward, done, truncated, _ = self._env.step(action)
-                
+
                 if isinstance(action, int):
                     action = np.array([action], dtype=int)
-                
+
                 self.memory.put(
                     observation=torch.from_numpy(state),
                     action=torch.from_numpy(action),
@@ -319,15 +319,23 @@ class DynaQ(_DynaQ):
         self._n_actions = self._env.action_space.n
 
         self.q_net: QNet = QNet(
-            self._state_dim, self._n_actions, architecture=[128, 128], device=self._device
+            self._state_dim,
+            self._n_actions,
+            architecture=[128, 128],
+            device=self._device,
         )
         self.q_target: QNet = QNet(
-            self._state_dim, self._n_actions, architecture=[128, 128], device=self._device
+            self._state_dim,
+            self._n_actions,
+            architecture=[128, 128],
+            device=self._device,
         )
         self.q_target.load_state_dict(self.q_net.state_dict().copy())
 
         # note n_actions = action dim because of one hot encoding -> easiest encoding but others are possible
-        self.world_model = WorldModel(self._state_dim, self._n_actions, device=self._device)
+        self.world_model = WorldModel(
+            self._state_dim, self._n_actions, device=self._device
+        )
 
     def get_max_q(self, state):
         q_value = self.q_target.complete_forward(state.to(self._device))
@@ -469,10 +477,14 @@ class MultiDiscreteDynaQ(_DynaQ):
         self._n_actions = action_space.nvec.prod()
 
         self.q_net: MultiDiscreteQNet = MultiDiscreteQNet(
-            self._state_dim, action_space.nvec, device=self._device,
+            self._state_dim,
+            action_space.nvec,
+            device=self._device,
         )
         self.q_target: MultiDiscreteQNet = MultiDiscreteQNet(
-            self._state_dim, action_space.nvec, device=self._device,
+            self._state_dim,
+            action_space.nvec,
+            device=self._device,
         )
         self.q_target.load_state_dict(self.q_net.state_dict().copy())
 
@@ -596,7 +608,7 @@ class MultiDiscreteDynaQAgent(_Agent):
         q_net: MultiDiscreteQNet,
         deterministic: bool = False,
         mc_sample: int = None,
-):
+    ):
         super().__init__()
         self.q_net = q_net
         self.deterministic = deterministic

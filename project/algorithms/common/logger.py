@@ -47,7 +47,9 @@ class CSVLogger(_Logger):
 
     def log_scalar(self, name, value, step):
         if not isinstance(value, (float, int)):
-            logging.error(f"Value to name: {name} is not a float. Not able to log. ({value=}({type(value)}))")
+            logging.error(
+                f"Value to name: {name} is not a float. Not able to log. ({value=}({type(value)}))"
+            )
             return
         self._data.append({name: value, "step": step})
 

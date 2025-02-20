@@ -44,11 +44,13 @@ class _RLAlgorithm(ABC):
             if not isinstance(self._log_dir, Path)
             else self._log_dir
         )
-        self._device = device if isinstance(device, torch.device) else torch.device(device)
+        self._device = (
+            device if isinstance(device, torch.device) else torch.device(device)
+        )
 
         self.hparams = Namespace()
         self.episode_offset = 0
-        
+
     def save_hyperparmeters(self, *args):
         # Get the frame of the calling function (i.e., the __init__ method)
         frame = inspect.currentframe().f_back
@@ -203,4 +205,4 @@ class _RLAlgorithm(ABC):
 
     @abstractmethod
     def get_agent(self, deterministic: bool = True) -> _Agent:
-        raise NotImplementedError           
+        raise NotImplementedError
