@@ -23,7 +23,6 @@ export PYTHONPATH=/home/stud143/projects/LaserHockeyProject:$PYTHONPATH
 # Run the correct command		
 srun -N1 -n1 -c $SLURM_CPUS_PER_TASK --gres=gpu:1080ti:1 \
 	singularity exec --nv /home/stud143/projects/LaserHockeyProject/container.sif \
-	/venv/bin/python /home/stud143/projects/LaserHockeyProject/project/__main__.py train-md-dyna-gym --gym-env=LunarLander-v3 --n-actions 100 --force --device cuda:0
+	/venv/bin/python /home/stud143/projects/LaserHockeyProject/project/__main__.py train-md-dyna-gym --gym-env=LunarLander-v3 --max-steps 1000  --n-actions 100 --force --device cuda:0
 
 echo "DONE!"
-	
