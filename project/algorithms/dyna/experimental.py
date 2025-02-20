@@ -88,9 +88,11 @@ class ERDynaQ(DynaQ):
         action_prob = action_prob + 1e-18  # avoid 0
         entropy = -torch.sum(action_prob * torch.log(action_prob))
 
-        loss = -alpha * (entropy - self.target_entropy)
+        loss = -    (entropy - self.target_entropy)
         self.log_alpha_optimizer.zero_grad()
         loss.backward()
         self.log_alpha_optimizer.step()
-        
-        self.log_scalar(self.get_name() + "/epsilon_loss", loss.item(), episode_idx)
+
+self.log_scalar(self.get_name() + "/epsilon_loss", loss     .item(), episode_idx)
+        self.log_scalar(self.get_name() + "/target_entropy", self.target_entropy, episode_idx)
+        self.log_scalar(self.get_name() + "/entropy", entropy.detach().item(), episode_idx)
