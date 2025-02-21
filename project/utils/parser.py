@@ -300,9 +300,6 @@ def add_render_sac_hockey_args(parser: ArgumentParser) -> ArgumentParser:
     return parser
 
 
-from pyargwriter.api.hydra_plugin import add_hydra_parser
-
-
 def add_train_sac_hockey_args(parser: ArgumentParser) -> ArgumentParser:
     parser.add_argument(
         "--force",
@@ -322,7 +319,25 @@ def add_train_sac_hockey_args(parser: ArgumentParser) -> ArgumentParser:
     return parser
 
 
-def add_train_sb3_sac_args(parser: ArgumentParser) -> ArgumentParser:
+from pyargwriter.api.hydra_plugin import add_hydra_parser
+
+
+def add_train_sb3_sac_hockey_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument(
+        "--force",
+        help="--no-documentation-exists--",
+        dest="force",
+        action="store_true",
+        required=False,
+    )
+    parser.add_argument(
+        "--device",
+        help="--no-documentation-exists--",
+        dest="device",
+        type=str,
+        default="cpu",
+        required=False,
+    )
     return parser
 
 
@@ -338,9 +353,12 @@ def setup_entrypoint_parser(
     train_dreamer = command_subparser.add_parser("train-dreamer", help="_summary_")
     train_dreamer = add_train_dreamer_args(train_dreamer)
     subparser["train_dreamer"] = train_dreamer
-    train_sb3_sac = command_subparser.add_parser("train-sb3-sac", help="_summary_")
-    train_sb3_sac = add_train_sb3_sac_args(train_sb3_sac)
-    subparser["train_sb3_sac"] = train_sb3_sac
+    train_sb3_sac_hockey = command_subparser.add_parser(
+        "train-sb3-sac-hockey", help="--no-documentation-exists--"
+    )
+    train_sb3_sac_hockey = add_train_sb3_sac_hockey_args(train_sb3_sac_hockey)
+    train_sb3_sac_hockey = add_hydra_parser(train_sb3_sac_hockey)
+    subparser["train_sb3_sac_hockey"] = train_sb3_sac_hockey
     train_sac_hockey = command_subparser.add_parser(
         "train-sac-hockey", help="--no-documentation-exists--"
     )

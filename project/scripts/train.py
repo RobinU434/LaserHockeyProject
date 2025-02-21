@@ -5,6 +5,7 @@ from gymnasium.spaces import Box, Discrete, MultiDiscrete
 import numpy as np
 from omegaconf import DictConfig
 from stable_baselines3.common.logger import configure
+from stable_baselines3.sac import SAC as SB_SAC
 import logging
 
 from project.algorithms.common.logger import CSVLogger, TensorBoardLogger
@@ -25,9 +26,10 @@ from project.algorithms.trainer import (
     WarmupSchedule,
 )
 from project.environment.evaluate_env import EvalGymSuite, EvalHockeySuite
-from project.environment.hockey_env.hockey.hockey_env import HockeyEnv
+from project.environment.hockey_env.hockey.hockey_env import BasicOpponent, HockeyEnv
 from project.environment.single_player_env import SinglePlayerHockeyEnv
 from project.utils.configs.train_sac_config import Config as SACConfig
+from project.utils.configs.train_sb_sac_config import Config as SBSACConfig
 from project.utils.configs.train_dyna_config import Config as DynaConfig
 from project.utils.configs.train_er_dyna_config import Config as ERDynaConfig
 from project.utils.configs.train_md_dyna_config import Config as MDDynaConfig
@@ -40,17 +42,32 @@ def train_dreamer():
     pass
 
 
-def train_sb3_sac():
-    env = HockeyEnv(mode="NORMAL")
+def train_sb3_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
+    config: SBSACConfig = SBSACConfig.from_dict_config(config)
+    opponent = BasicOpponent(weak=True)
+    train_env = SinglePlayerHockeyEnv(opponent, **config.SelfPlay.Env.to_container())
+    train_env = AffineActionTransform(
+        train_env, np.array([1, 1, 1, 0.5]), np.array([0, 0, 0, 0.5])
+    )
+    # build algorithm
+    log_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    sac = SB_SAC(
+        "MlpPolicy",
+        env=train_env,
+        tensorboard_log=log_dir,
+        device=device,
+        verbose=1,
+        **config.SAC.to_container(),
+    )
 
-    tmp_path = "/tmp/sb3_log/"
-    new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
+    print(sac)
+    if not force:
+        question = input("Would you like to start to train? [Y, n]")
+        if not (question is None or question.lower().strip() in ["", "y", "yes"]):
+            print("Abort training")
+            return
 
-    # model = SAC("MlpPolicy", env, verbose=1)
-    model = SAC("MlpPolicy", env, verbose=1)
-    model.set_logger(new_logger)
-
-    model.learn(100)
+    sac.learn(100_000)
 
 
 def train_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
@@ -60,7 +77,7 @@ def train_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
     eval_env = EvalHockeySuite(**config.SelfPlay.Env.to_container())
 
     train_env = AffineActionTransform(
-        train_env, np.array([1, 1, 1, 0.5]), np.array([0,0,0, 0.5])
+        train_env, np.array([1, 1, 1, 0.5]), np.array([0, 0, 0, 0.5])
     )
 
     # ititialize HDF5ReplayBuffer (save interactions)
@@ -100,25 +117,6 @@ def train_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
             print("Abort training")
             return
 
-    # train loop, saves interactions in hdf5
-    """for episode in range(config.episode_budget):
-        state = train_env.reset()
-        done = False
-        while not done:
-            action = sac.select_action(state)  
-            next_state, reward, done, _ = train_env.step(action)
-
-            # save interactions
-            hdf5_replay_buffer.add_interaction(state, action, reward, next_state, done)
-
-            # prepare next state for interactions
-            state = next_state
-
-        # if there is a predefined checkpoint for saving, save the buffer
-        if (episode + 1) % config.save_interval == 0:
-            print(f"Saving HDF5 buffer after {episode + 1} episodes.")
-            hdf5_replay_buffer.close()
-    """
     trainer.train(config.episode_budget)
     # train algorithm
 
