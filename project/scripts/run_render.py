@@ -9,7 +9,9 @@ sys.path.append(str(project_root))
 from render import render_sac_hockey
 
 # Define the checkpoint path
-checkpoint_path = "C:/Users/killa/Documents/GitHub/LaserHockeyProject/results/checkpoint_1000.pt"
+checkpoint_path = (
+    "C:/Users/killa/Documents/GitHub/LaserHockeyProject/results/checkpoint_1000.pt"
+)
 
 # Call the rendering function
 render_sac_hockey(checkpoint=checkpoint_path, deterministic=True, strong_opponent=False)

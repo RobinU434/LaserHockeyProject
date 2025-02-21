@@ -65,7 +65,7 @@ class ERDynaQ(DynaQ):
     def get_action(self, state, episode_idx):
         with torch.no_grad():
             q_val = self.q_net.complete_forward(state)
-        
+
         action_log_probs = F.log_softmax(torch.exp(self.log_alpha) * q_val, dim=-1)
         action = np.random.choice(
             len(action_log_probs), p=torch.exp(action_log_probs).cpu().detach().numpy()
@@ -73,7 +73,7 @@ class ERDynaQ(DynaQ):
         log_prob = action_log_probs[action].cpu().item()
 
         return action, log_prob
-    
+
     def _get_epsilon(self, episode_idx):
         return torch.exp(self.log_alpha).item()
 
@@ -85,19 +85,21 @@ class ERDynaQ(DynaQ):
         state = mini_batch[0]
         state = state.to(self._device)
 
-
         q_val = self.q_net.complete_forward(state)
         action_prob = F.softmax(alpha * q_val, dim=-1)
         action_prob = action_prob + 1e-18  # avoid 0
         entropy = -torch.sum(action_prob * torch.log(action_prob))
 
         # last term is regularization so we want to have the target entropy emerged from the raw distribution
-        loss = (entropy - self.target_entropy)**2  + (1 - alpha)**2
+        loss = (entropy - self.target_entropy) ** 2 + (1 - alpha) ** 2
         self.log_alpha_optimizer.zero_grad()
         loss.backward()
         self.log_alpha_optimizer.step()
 
-
         self.log_scalar(self.get_name() + "/epsilon_loss", loss.item(), episode_idx)
-        self.log_scalar(self.get_name() + "/target_entropy", self.target_entropy, episode_idx)
-        self.log_scalar(self.get_name() + "/entropy", entropy.detach().item(), episode_idx)
+        self.log_scalar(
+            self.get_name() + "/target_entropy", self.target_entropy, episode_idx
+        )
+        self.log_scalar(
+            self.get_name() + "/entropy", entropy.detach().item(), episode_idx
+        )

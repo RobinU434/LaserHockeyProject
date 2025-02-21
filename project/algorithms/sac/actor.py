@@ -16,6 +16,7 @@ class Actor(nn.Module):
         architecture: List[int] = [128, 128],
         latent_dim: int = 128,
         activation_function: str = "ReLU",
+        predict_cov: bool = False,
     ) -> None:
         super().__init__()
 
