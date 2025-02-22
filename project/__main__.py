@@ -24,6 +24,14 @@ def execute(args: dict) -> bool:
                 config_name="train_sb_sac.yaml",
             )
 
+        case "upload-sb3-sac":
+            module.upload_sb3_sac(
+                checkpoint=args["checkpoint"],
+                server_url=args["server_url"],
+                server_port=args["server_port"],
+                token=args["token"],
+            )
+
         case "train-sb3-er-sac-hockey":
             api.hydra_plugin.hydra_wrapper(
                 module.train_sb3_er_sac_hockey,

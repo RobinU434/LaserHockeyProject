@@ -21,6 +21,21 @@ class Entrypoint:
 
         train_sb3_sac(config, force, device)
 
+    def upload_sb3_sac(
+        self, checkpoint: str, server_url: str, server_port: int, token: str
+    ):
+        """upload sb3 sac agent to competition server
+
+        Args:
+            checkpoint (str): path to SB3 sac checkpoint
+            server_url (str): URL of the server.
+            server_port (int): Port of the server.
+            token (str): Your access token.
+        """
+        from project.scripts.upload import upload_sb_sac_agent
+
+        upload_sb_sac_agent(checkpoint, server_url, server_port, token)
+
     @add_hydra("config", None, config_path="config", config_name="train_sb_sac.yaml")
     def train_sb3_er_sac_hockey(
         self, config: DictConfig, force: bool = False, device: str = "cpu"
