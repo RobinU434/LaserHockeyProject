@@ -1,3 +1,4 @@
+import glob
 from pathlib import Path
 import gymnasium
 import hydra
@@ -5,7 +6,7 @@ from gymnasium.spaces import Box, Discrete, MultiDiscrete
 import numpy as np
 from omegaconf import DictConfig
 from stable_baselines3.common.logger import configure
-from stable_baselines3.sac import SAC as SB_SAC
+from project.algorithms.sb3_extensions.sac import SAC as SB_SAC, SAC_Agent
 from stable_baselines3.common.callbacks import (
     CheckpointCallback,
     EvalCallback,
@@ -82,6 +83,65 @@ def train_sb3_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
     sac.learn(config.episode_budget, callback=callback)
 
 
+def train_sb3_sac_sp(config: DictConfig, force: bool = False, device: str = "cpu"):
+    print(Path.cwd())
+    opponent_ckpts = glob.glob("results/train_sb3_sac_sp/warmup/*.zip")
+    print(f"Found: {len(opponent_ckpts)} warmup checkpoints")
+    config: SBSACConfig = SBSACConfig.from_dict_config(config)
+    
+    ckpt = np.random.randint(0, len(opponent_ckpts))
+    opponent = SAC_Agent.from_checkpoint(opponent_ckpts[ckpt])
+    train_env = SinglePlayerHockeyEnv(opponent, **config.SelfPlay.Env.to_container())
+    train_env = AffineActionTransform(
+        train_env, np.array([1, 1, 1, 0.5]), np.array([0, 0, 0, 0.5])
+    )
+
+    # build
+    log_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+
+    # Set new logger
+    sac = SB_SAC(
+        "MlpPolicy",
+        env=train_env,
+        tensorboard_log=log_dir,
+        device=device,
+        verbose=1,
+        **config.SAC.to_container(),
+    )       
+    print(sac)
+    new_logger = configure(log_dir, ["stdout", "csv", "tensorboard"])
+    sac.set_logger(new_logger)
+    
+    if not force:
+        question = input("Would you like to start to train? [Y, n]")
+        if not (question is None or question.lower().strip() in ["", "y", " yes"]):
+            print("Abort training")
+            return
+
+    for idx in range(config.episode_budget // config.SelfPlay.self_play_period):
+        path = log_dir + f"/{idx + 1}"
+
+        callback = CheckpointCallback(config.save_interval, path, "sac_model")
+        sac.learn(config.SelfPlay.self_play_period, callback=callback)
+        sac.save(path + "/sac_model_final.zip")
+
+        # update ckpts
+        opponent_ckpts.extend(glob.glob(path + "/*.zip"))
+        
+        # load next opponent
+        ckpt = opponent_ckpts[np.random.randint(0, len(opponent_ckpts))]
+        opponent = SAC_Agent.from_checkpoint(ckpt)
+        train_env = SinglePlayerHockeyEnv(
+            opponent, **config.SelfPlay.Env.to_container()
+        )
+        train_env = AffineActionTransform(
+            train_env,
+            np.array([1, 1, 1, 0.5]),
+            np.array([0, 0, 0, 0.5]),
+        )
+        sac.env = sac._wrap_env(train_env)
+
+
 def train_sb3_er_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
     config: SBSACConfig = SBSACConfig.from_dict_config(config)
     opponent = BasicOpponent(weak=False)
@@ -100,6 +160,38 @@ def train_sb3_er_sac(config: DictConfig, force: bool = False, device: str = "cpu
         device=device,
         verbose=1,
         replay_buffer_class=ERReplayBuffer,
+        **config.SAC.to_container(),
+    )
+    # set up logger
+    new_logger = configure(log_dir, ["stdout", "csv", "tensorboard"])
+    sac.set_logger(new_logger)
+
+    print(sac)
+    if not force:
+        question = input("Would you like to start to train? [Y, n]")
+        if not (question is None or question.lower().strip() in ["", "y", " yes"]):
+            print("Abort training")
+            return
+
+    callback = CheckpointCallback(config.save_interval, log_dir, "sac_model")
+    sac.learn(config.episode_budget, callback=callback)
+
+
+def train_sb3_sac_gym(
+    config: DictConfig, gym_env: str, force: bool = False, device: str = "cpu"
+):
+    config: SBSACConfig = SBSACConfig.from_dict_config(config)
+    train_env = gymnasium.make(gym_env)
+
+    # build
+    log_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    # Set new logger
+    sac = SB_SAC(
+        "MlpPolicy",
+        env=train_env,
+        tensorboard_log=log_dir,
+        device=device,
+        verbose=1,
         **config.SAC.to_container(),
     )
     # set up logger

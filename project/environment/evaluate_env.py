@@ -106,11 +106,12 @@ class EvalHockeySuite(_EvalEnv):
             opponent=weak_opponent, keep_mode=keep_mode, mode=mode, verbose=verbose
         )
 
-    def eval_agent(self, player: _Agent) -> Dict[str, float]:
+    def eval_agent(self, player: _Agent, verbose: bool = False) -> Dict[str, float]:
         """evaluate player on the weak and strong opponent
 
         Args:
             player (Agent): player to evaluate
+            verbose (bool, optional): show progress bar
 
         Returns:
             Dict[str, float]: dict with metrics to log further on. Contains:
@@ -126,16 +127,16 @@ class EvalHockeySuite(_EvalEnv):
                 - eval_weak/mean_length
         """
         strong_results = self._eval_on_opponent(
-            player, self.strong_env, prefix="eval_strong/"
+            player, self.strong_env, prefix="eval_strong/", verbose=verbose
         )
         weak_results = self._eval_on_opponent(
-            player, self.weak_env, prefix="eval_weak/"
+            player, self.weak_env, prefix="eval_weak/", verbose=verbose
         )
         results = {**strong_results, **weak_results}
         return results
 
     def _eval_on_opponent(
-        self, player: _Agent, env: Env, prefix: str = ""
+        self, player: _Agent, env: Env, prefix: str = "", verbose: bool = False
     ) -> Dict[str, float]:
         """evaluate player on environment
 
@@ -143,6 +144,7 @@ class EvalHockeySuite(_EvalEnv):
             player (Agent): player to evaluate
             env (Env): env to evaluate on
             prefix (str, optional): prefix for log tag / name. Defaults to "".
+            verbose (bool, optional): show progress bar.
 
         Returns:
             Dict[str, float]: log metrics:
@@ -154,10 +156,10 @@ class EvalHockeySuite(_EvalEnv):
         """
         results = []
         iterator = range(self.n_games)
-        if self.verbose:
+        if verbose:
             iterator = tqdm(iterator, desc="Evaluate", unit="game")
 
-        for _ in range(self.n_games):
+        for _ in iterator:
             results.append(self._collect_rollout(player, env))
 
         # aggregate results

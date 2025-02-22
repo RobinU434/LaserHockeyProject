@@ -21,6 +21,22 @@ class Entrypoint:
 
         train_sb3_sac(config, force, device)
 
+    @add_hydra("config", None, config_path="config", config_name="train_sb_sac.yaml")
+    def train_sb3_sac_sp(
+        self, config: DictConfig, force: bool = False, device: str = "cpu"
+    ):
+        from project.scripts.train import train_sb3_sac_sp
+
+        train_sb3_sac_sp(config, force, device)
+
+    @add_hydra("config", None, config_path="config", config_name="train_sb_sac.yaml")
+    def train_sb3_sac_gym(
+        self, config: DictConfig, gym_env: str, force: bool = False, device: str = "cpu"
+    ):
+        from project.scripts.train import train_sb3_sac_gym
+
+        train_sb3_sac_gym(config, gym_env, force, device)
+
     def upload_sb3_sac(
         self, checkpoint: str, server_url: str, server_port: int, token: str
     ):

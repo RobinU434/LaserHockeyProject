@@ -370,6 +370,51 @@ def add_upload_sb3_sac_args(parser: ArgumentParser) -> ArgumentParser:
     return parser
 
 
+def add_train_sb3_sac_gym_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument(
+        "--gym-env",
+        help="--no-documentation-exists--",
+        dest="gym_env",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--force",
+        help="--no-documentation-exists--",
+        dest="force",
+        action="store_true",
+        required=False,
+    )
+    parser.add_argument(
+        "--device",
+        help="--no-documentation-exists--",
+        dest="device",
+        type=str,
+        default="cpu",
+        required=False,
+    )
+    return parser
+
+
+def add_train_sb3_sac_sp_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument(
+        "--force",
+        help="--no-documentation-exists--",
+        dest="force",
+        action="store_true",
+        required=False,
+    )
+    parser.add_argument(
+        "--device",
+        help="--no-documentation-exists--",
+        dest="device",
+        type=str,
+        default="cpu",
+        required=False,
+    )
+    return parser
+
+
 from pyargwriter.api.hydra_plugin import add_hydra_parser
 
 
@@ -410,6 +455,18 @@ def setup_entrypoint_parser(
     train_sb3_sac_hockey = add_train_sb3_sac_hockey_args(train_sb3_sac_hockey)
     train_sb3_sac_hockey = add_hydra_parser(train_sb3_sac_hockey)
     subparser["train_sb3_sac_hockey"] = train_sb3_sac_hockey
+    train_sb3_sac_sp = command_subparser.add_parser(
+        "train-sb3-sac-sp", help="--no-documentation-exists--"
+    )
+    train_sb3_sac_sp = add_train_sb3_sac_sp_args(train_sb3_sac_sp)
+    train_sb3_sac_sp = add_hydra_parser(train_sb3_sac_sp)
+    subparser["train_sb3_sac_sp"] = train_sb3_sac_sp
+    train_sb3_sac_gym = command_subparser.add_parser(
+        "train-sb3-sac-gym", help="--no-documentation-exists--"
+    )
+    train_sb3_sac_gym = add_train_sb3_sac_gym_args(train_sb3_sac_gym)
+    train_sb3_sac_gym = add_hydra_parser(train_sb3_sac_gym)
+    subparser["train_sb3_sac_gym"] = train_sb3_sac_gym
     upload_sb3_sac = command_subparser.add_parser(
         "upload-sb3-sac", help="upload sb3 sac agent to competition server"
     )

@@ -24,6 +24,28 @@ def execute(args: dict) -> bool:
                 config_name="train_sb_sac.yaml",
             )
 
+        case "train-sb3-sac-sp":
+            api.hydra_plugin.hydra_wrapper(
+                module.train_sb3_sac_sp,
+                args,
+                command_parser["train_sb3_sac_sp"],
+                config_var_name="config",
+                version_base=None,
+                config_path=str(Path.cwd().joinpath("config")),
+                config_name="train_sb_sac.yaml",
+            )
+
+        case "train-sb3-sac-gym":
+            api.hydra_plugin.hydra_wrapper(
+                module.train_sb3_sac_gym,
+                args,
+                command_parser["train_sb3_sac_gym"],
+                config_var_name="config",
+                version_base=None,
+                config_path=str(Path.cwd().joinpath("config")),
+                config_name="train_sb_sac.yaml",
+            )
+
         case "upload-sb3-sac":
             module.upload_sb3_sac(
                 checkpoint=args["checkpoint"],

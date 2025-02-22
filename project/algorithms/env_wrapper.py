@@ -4,6 +4,8 @@ import numpy as np
 from gymnasium import ActionWrapper, RewardWrapper
 from gymnasium.spaces import Box, Discrete, MultiDiscrete
 
+from project.algorithms.utils.gym_helper import ContinuousPlaceHolderEnv
+
 
 class TanhWrapper(RewardWrapper):
     def __init__(self, env, scan_steps: int = None):
@@ -143,6 +145,13 @@ class MD2DiscreteActionWrapper(ActionWrapper):
 
 class AffineActionTransform(ActionWrapper):
     def __init__(self, env, action_scale: np.ndarray, action_bias: np.ndarray):
+        if env is None:
+            env = ContinuousPlaceHolderEnv(
+                state_dim=1,
+                action_dim=len(action_scale),
+                action_scale=action_scale,
+                action_bias=action_bias,
+            )
         super().__init__(env)
 
         assert action_bias.shape == env.action_space.shape
