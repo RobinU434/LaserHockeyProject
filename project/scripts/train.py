@@ -6,6 +6,11 @@ import numpy as np
 from omegaconf import DictConfig
 from stable_baselines3.common.logger import configure
 from stable_baselines3.sac import SAC as SB_SAC
+from stable_baselines3.common.callbacks import (
+    CheckpointCallback,
+    EvalCallback,
+    CallbackList,
+)
 import logging
 
 from project.algorithms.common.logger import CSVLogger, TensorBoardLogger
@@ -49,8 +54,10 @@ def train_sb3_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
     train_env = AffineActionTransform(
         train_env, np.array([1, 1, 1, 0.5]), np.array([0, 0, 0, 0.5])
     )
-    # build algorithm
+    # build
     log_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+
+    # Set new logger
     sac = SB_SAC(
         "MlpPolicy",
         env=train_env,
@@ -58,7 +65,10 @@ def train_sb3_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
         device=device,
         verbose=1,
         **config.SAC.to_container(),
-    )   
+    )
+    # set up logger
+    new_logger = configure(log_dir, ["stdout", "csv", "tensorboard"])
+    sac.set_logger(new_logger)
 
     print(sac)
     if not force:
@@ -67,7 +77,8 @@ def train_sb3_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
             print("Abort training")
             return
 
-    sac.learn(1000_000)
+    callback = CheckpointCallback(config.save_interval, log_dir, "sac_model")
+    sac.learn(config.episode_budget, callback=callback)
 
 
 def train_sac(config: DictConfig, force: bool = False, device: str = "cpu"):

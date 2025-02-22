@@ -1,7 +1,7 @@
 results_dir: results
-episode_budget: 100_000
-eval_check_interval: 100
-save_interval: 100
+episode_budget: 1000_000  # steps
+eval_check_interval: 10000  # steps
+save_interval: 10000  # steps
 
 SelfPlay:
   self_play_period: 1000  # epochs
