@@ -24,6 +24,7 @@ from project.algorithms.env_wrapper import (
     SymLogWrapper,
     TanhWrapper,
 )
+from project.algorithms.sb3_extensions.sac import ER_SAC, ERReplayBuffer
 from project.algorithms.sac.sac import SAC
 from project.algorithms.trainer import (
     ExponentialSampler,
@@ -64,6 +65,41 @@ def train_sb3_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
         tensorboard_log=log_dir,
         device=device,
         verbose=1,
+        **config.SAC.to_container(),
+    )
+    # set up logger
+    new_logger = configure(log_dir, ["stdout", "csv", "tensorboard"])
+    sac.set_logger(new_logger)
+
+    print(sac)
+    if not force:
+        question = input("Would you like to start to train? [Y, n]")
+        if not (question is None or question.lower().strip() in ["", "y", " yes"]):
+            print("Abort training")
+            return
+
+    callback = CheckpointCallback(config.save_interval, log_dir, "sac_model")
+    sac.learn(config.episode_budget, callback=callback)
+
+
+def train_sb3_er_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
+    config: SBSACConfig = SBSACConfig.from_dict_config(config)
+    opponent = BasicOpponent(weak=False)
+    train_env = SinglePlayerHockeyEnv(opponent, **config.SelfPlay.Env.to_container())
+    train_env = AffineActionTransform(
+        train_env, np.array([1, 1, 1, 0.5]), np.array([0, 0, 0, 0.5])
+    )
+    # build
+    log_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+
+    # Set new logger
+    sac = ER_SAC(
+        "MlpPolicy",
+        env=train_env,
+        tensorboard_log=log_dir,
+        device=device,
+        verbose=1,
+        replay_buffer_class=ERReplayBuffer,
         **config.SAC.to_container(),
     )
     # set up logger

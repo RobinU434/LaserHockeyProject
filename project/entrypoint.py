@@ -21,6 +21,14 @@ class Entrypoint:
 
         train_sb3_sac(config, force, device)
 
+    @add_hydra("config", None, config_path="config", config_name="train_sb_sac.yaml")
+    def train_sb3_er_sac_hockey(
+        self, config: DictConfig, force: bool = False, device: str = "cpu"
+    ):
+        from project.scripts.train import train_sb3_er_sac
+
+        train_sb3_er_sac(config, force, device)
+
     @add_hydra("config", None, config_path="config", config_name="train_sac.yaml")
     def train_sac_hockey(
         self, config: DictConfig, force: bool = False, device: str = "cpu"
