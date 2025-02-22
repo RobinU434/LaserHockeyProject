@@ -44,7 +44,7 @@ def train_dreamer():
 
 def train_sb3_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
     config: SBSACConfig = SBSACConfig.from_dict_config(config)
-    opponent = BasicOpponent(weak=True)
+    opponent = BasicOpponent(weak=False)
     train_env = SinglePlayerHockeyEnv(opponent, **config.SelfPlay.Env.to_container())
     train_env = AffineActionTransform(
         train_env, np.array([1, 1, 1, 0.5]), np.array([0, 0, 0, 0.5])
@@ -58,16 +58,16 @@ def train_sb3_sac(config: DictConfig, force: bool = False, device: str = "cpu"):
         device=device,
         verbose=1,
         **config.SAC.to_container(),
-    )
+    )   
 
     print(sac)
     if not force:
         question = input("Would you like to start to train? [Y, n]")
-        if not (question is None or question.lower().strip() in ["", "y", "yes"]):
+        if not (question is None or question.lower().strip() in ["", "y", " yes"]):
             print("Abort training")
             return
 
-    sac.learn(100_000)
+    sac.learn(1000_000)
 
 
 def train_sac(config: DictConfig, force: bool = False, device: str = "cpu"):

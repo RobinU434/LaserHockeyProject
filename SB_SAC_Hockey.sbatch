@@ -7,7 +7,7 @@
 #SBATCH --gres=gpu:1080ti:1
 
 #SBATCH --partition=day
-#SBATCH --time=04:00:00
+#SBATCH --time=08:00:00
 # "minutes:seconds", "hours:minutes:seconds", "days-hours", "days-hours:minutes" and "days-hours:minutes:seconds"
 
 #SBATCH --error=/home/stud143/projects/LaserHockeyProject/logs/SAC_hockey.err
