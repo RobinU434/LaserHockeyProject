@@ -1,3 +1,9 @@
 [submodule "project/environment/hockey_env"]
 	path = project/environment/hockey_env
 	url = git@github.com:martius-lab/hockey-env.git
+[submodule "project/comp_client"]
+	path = project/comp_client
+	url = git@github.com:martius-lab/comprl-hockey-agent.git
+[submodule "project/comprl"]
+	path = project/comprl
+	url = git@github.com:martius-lab/teamproject-competition-server.git

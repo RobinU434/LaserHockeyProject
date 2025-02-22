@@ -93,11 +93,12 @@ class ER_SAC(SAC):
         self, replay_buffer, buffer_action, new_obs, reward, dones, infos
     ):
         # get sampling weight
-        new_obs_ = th.from_numpy(new_obs)
-        reward_ = th.from_numpy(reward)
-        dones_ = th.from_numpy(dones).float()
-        curr_obs_ = th.from_numpy(self._last_obs)
-        buffer_action_ = th.from_numpy(buffer_action)
+        new_obs_ = th.from_numpy(new_obs).to(self.device)
+        reward_ = th.from_numpy(reward).to(self.device)
+        dones_ = th.from_numpy(dones).float().to(self.device)
+        curr_obs_ = th.from_numpy(self._last_obs).to(self.device)
+        buffer_action_ = th.from_numpy(buffer_action).to(self.device)
+        
         target_q_values = self.get_td_target(new_obs_, reward_, dones_)
         current_q_values = self.critic(curr_obs_, buffer_action_)
         # Compute critic loss
@@ -106,7 +107,7 @@ class ER_SAC(SAC):
         )
         sampling_weight = sampling_weight.detach().cpu().item()
         infos[0]["sampling_weight"] = sampling_weight
-        
+    
         return super()._store_transition(
             replay_buffer, buffer_action, new_obs, reward, dones, infos
         )
