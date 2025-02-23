@@ -306,7 +306,7 @@ def train_sac_gym_env(
         if not (question is None or question.lower().strip() in ["", "y", "yes"]):
             print("Abort training")
             return
-
+            
     # train algorithm
     sac.train(config.episode_budget, verbose=not quiet)
 
@@ -343,6 +343,40 @@ def train_dyna_hockey(config: DictConfig, force: bool, device: str, quiet: bool)
 
     # train algorithm
     dyna.train(config.episode_budget, verbose=not quiet)
+
+def train_dyna_hockey(config: DictConfig, force: bool, device: str, quiet: bool):
+    config: DynaConfig = DynaConfig.from_dict_config(config)
+    opponent = BasicOpponent(weak=True)
+    train_env = SinglePlayerHockeyEnv(opponent, **config.SelfPlay.Env.to_container())
+    train_env = Box2MultiDiscreteActionWrapper(train_env, np.array([10, 10, 10, 2]))
+    train_env = MD2DiscreteActionWrapper(train_env)
+
+    log_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
+    logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
+
+    dyna = DynaQ(
+        env=train_env,
+        logger=logger,
+        log_dir=log_dir,
+        device=device,
+        **config.Dyna.to_container(),
+    )
+    dyna.to(device)
+
+    if not quiet:
+        print("Train on environment: ", train_env)
+        print(config)
+        print(dyna)
+
+    if not force:
+        question = input("Would you like to start to train? [Y, n]")
+        if not (question is None or question.lower().strip() in ["", "y", "yes"]):
+            print("Abort training")
+            return
+
+    # train algorithm
+    dyna.train(config.episode_budget, verbose=not quiet)
+    
 
 
 def train_dyna_gym_env(
