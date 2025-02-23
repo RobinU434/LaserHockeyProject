@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=SAC-Pendulum
+#SBATCH --job-name=SAC-SP
 
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-cpu=3G
@@ -10,8 +10,8 @@
 #SBATCH --time=24:00:00
 # "minutes:seconds", "hours:minutes:seconds", "days-hours", "days-hours:minutes" and "days-hours:minutes:seconds"
 
-#SBATCH --error=/home/stud143/projects/LaserHockeyProject/logs/SAC_hockey.err
-#SBATCH --output=/home/stud143/projects/LaserHockeyProject/logs/SAC_hockey.out
+#SBATCH --error=/home/stud143/projects/LaserHockeyProject/logs/SAC_SP.err
+#SBATCH --output=/home/stud143/projects/LaserHockeyProject/logs/SAC_SP.out
 
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=paulina.stark@student.uni-tuebingen.de
