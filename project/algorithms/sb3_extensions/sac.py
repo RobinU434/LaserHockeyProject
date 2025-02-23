@@ -42,6 +42,7 @@ class SB_SAC_Agent(Agent):
         mean_action, _, _ = self.sac.actor.get_action_dist_params(
             obv.to(self.sac.device)
         )
+        mean_action = th.tanh(mean_action)
         mean_action = mean_action.detach().cpu().numpy()
 
         if not batched:
