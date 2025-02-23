@@ -17,7 +17,9 @@ class SB_SAC_Agent(Agent):
         super().__init__()
         self.sac = sac
         self.action_transform = AffineActionTransform(
-            SinglePlayerHockeyEnv(BasicOpponent()), np.array([1, 1, 1, 0.5]), np.array([0, 0, 0, 0.5])
+            SinglePlayerHockeyEnv(BasicOpponent()),
+            np.array([1, 1, 1, 0.5]),
+            np.array([0, 0, 0, 0.5]),
         )
 
     @classmethod
@@ -37,7 +39,9 @@ class SB_SAC_Agent(Agent):
             batched = False
             obv = obv[None]
 
-        mean_action, _, _ = self.sac.actor.get_action_dist_params(obv)
+        mean_action, _, _ = self.sac.actor.get_action_dist_params(
+            obv.to(self.sac.device)
+        )
         mean_action = mean_action.detach().cpu().numpy()
 
         if not batched:
@@ -49,7 +53,7 @@ class SB_SAC_Agent(Agent):
 
 
 class SAC_Agent(_Agent):
-    def __init__(self, sac: SB_SAC):        
+    def __init__(self, sac: SB_SAC):
         super().__init__()
 
         self.agent = SB_SAC_Agent(sac)
