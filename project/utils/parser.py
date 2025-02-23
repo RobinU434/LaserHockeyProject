@@ -182,6 +182,32 @@ def add_train_dyna_gym_args(parser: ArgumentParser) -> ArgumentParser:
     return parser
 
 
+def add_train_dyna_hockey_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument(
+        "--force",
+        help="--no-documentation-exists--",
+        dest="force",
+        action="store_true",
+        required=False,
+    )
+    parser.add_argument(
+        "--device",
+        help="--no-documentation-exists--",
+        dest="device",
+        type=str,
+        default="cpu",
+        required=False,
+    )
+    parser.add_argument(
+        "--quiet",
+        help="--no-documentation-exists--",
+        dest="quiet",
+        action="store_true",
+        required=False,
+    )
+    return parser
+
+
 def add_render_sac_gym_args(parser: ArgumentParser) -> ArgumentParser:
     parser.add_argument(
         "--checkpoint",
@@ -505,6 +531,12 @@ def setup_entrypoint_parser(
     )
     render_sac_gym = add_render_sac_gym_args(render_sac_gym)
     subparser["render_sac_gym"] = render_sac_gym
+    train_dyna_hockey = command_subparser.add_parser(
+        "train-dyna-hockey", help="--no-documentation-exists--"
+    )
+    train_dyna_hockey = add_train_dyna_hockey_args(train_dyna_hockey)
+    train_dyna_hockey = add_hydra_parser(train_dyna_hockey)
+    subparser["train_dyna_hockey"] = train_dyna_hockey
     train_dyna_gym = command_subparser.add_parser(
         "train-dyna-gym", help="--no-documentation-exists--"
     )

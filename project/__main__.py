@@ -108,6 +108,17 @@ def execute(args: dict) -> bool:
                 max_steps=args["max_steps"],
             )
 
+        case "train-dyna-hockey":
+            api.hydra_plugin.hydra_wrapper(
+                module.train_dyna_hockey,
+                args,
+                command_parser["train_dyna_hockey"],
+                config_var_name="config",
+                version_base=None,
+                config_path=str(Path.cwd().joinpath("config")),
+                config_name="train_dyna.yaml",
+            )
+
         case "train-dyna-gym":
             api.hydra_plugin.hydra_wrapper(
                 module.train_dyna_gym,

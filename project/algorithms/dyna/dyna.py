@@ -236,8 +236,8 @@ class _DynaQ(_RLAlgorithm):
                 episode_steps += 1
                 log_probs += log_prob
                 with torch.no_grad():
-                    device_state = torch.from_numpy(state).to(self._device)[None]
-                    device_action = torch.from_numpy(action).to(self._device)
+                    device_state = torch.from_numpy(state).to(self._device).float()[None]
+                    device_action = torch.from_numpy(action).to(self._device).int()
                     q_target = self.q_target.forward(device_state, device_action)
                     q_value = self.q_net.forward(device_state, device_action)
                     stable_update += q_target.item() - q_value.item()
@@ -367,7 +367,7 @@ class DynaQ(_DynaQ):
 
         # greedy action
         with torch.no_grad():
-            action_log_probs = self.q_net.action_log_probs(state.to(self._device))
+            action_log_probs = self.q_net.action_log_probs(state.to(self._device).float())
         action = torch.argmax(action_log_probs).item()
         log_prob = action_log_probs[action]
         log_prob = log_prob.cpu().item()

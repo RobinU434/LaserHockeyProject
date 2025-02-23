@@ -106,6 +106,18 @@ class Entrypoint:
         render_sac(checkpoint, gym_env, deterministic, max_steps)
 
     @add_hydra("config", None, config_path="config", config_name="train_dyna.yaml")
+    def train_dyna_hockey(
+        self,
+        config: DictConfig,
+        force: bool = False,
+        device: str = "cpu",
+        quiet: bool = False,
+    ):
+        from project.scripts.train import train_dyna_hockey
+
+        train_dyna_hockey(config, force, device, quiet)
+
+    @add_hydra("config", None, config_path="config", config_name="train_dyna.yaml")
     def train_dyna_gym(
         self,
         config: DictConfig,

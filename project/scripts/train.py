@@ -88,7 +88,7 @@ def train_sb3_sac_sp(config: DictConfig, force: bool = False, device: str = "cpu
     opponent_ckpts = glob.glob("results/train_sb3_sac_sp/warmup/*.zip")
     print(f"Found: {len(opponent_ckpts)} warmup checkpoints")
     config: SBSACConfig = SBSACConfig.from_dict_config(config)
-    
+
     ckpt = np.random.randint(0, len(opponent_ckpts))
     opponent = SAC_Agent.from_checkpoint(opponent_ckpts[ckpt])
     train_env = SinglePlayerHockeyEnv(opponent, **config.SelfPlay.Env.to_container())
@@ -107,11 +107,11 @@ def train_sb3_sac_sp(config: DictConfig, force: bool = False, device: str = "cpu
         device=device,
         verbose=1,
         **config.SAC.to_container(),
-    )       
+    )
     print(sac)
     new_logger = configure(log_dir, ["stdout", "csv", "tensorboard"])
     sac.set_logger(new_logger)
-    
+
     if not force:
         question = input("Would you like to start to train? [Y, n]")
         if not (question is None or question.lower().strip() in ["", "y", " yes"]):
@@ -127,7 +127,7 @@ def train_sb3_sac_sp(config: DictConfig, force: bool = False, device: str = "cpu
 
         # update ckpts
         opponent_ckpts.extend(glob.glob(path + "/*.zip"))
-        
+
         # load next opponent
         ckpt = opponent_ckpts[np.random.randint(0, len(opponent_ckpts))]
         opponent = SAC_Agent.from_checkpoint(ckpt)
@@ -309,6 +309,40 @@ def train_sac_gym_env(
 
     # train algorithm
     sac.train(config.episode_budget, verbose=not quiet)
+
+
+def train_dyna_hockey(config: DictConfig, force: bool, device: str, quiet: bool):
+    config: DynaConfig = DynaConfig.from_dict_config(config)
+    opponent = BasicOpponent(weak=True)
+    train_env = SinglePlayerHockeyEnv(opponent, **config.SelfPlay.Env.to_container())
+    train_env = Box2MultiDiscreteActionWrapper(train_env, np.array([10, 10, 10, 2]))
+    train_env = MD2DiscreteActionWrapper(train_env)
+
+    log_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
+    logger = [TensorBoardLogger(log_dir), CSVLogger(log_dir)]
+
+    dyna = DynaQ(
+        env=train_env,
+        logger=logger,
+        log_dir=log_dir,
+        device=device,
+        **config.Dyna.to_container(),
+    )
+    dyna.to(device)
+
+    if not quiet:
+        print("Train on environment: ", train_env)
+        print(config)
+        print(dyna)
+
+    if not force:
+        question = input("Would you like to start to train? [Y, n]")
+        if not (question is None or question.lower().strip() in ["", "y", "yes"]):
+            print("Abort training")
+            return
+
+    # train algorithm
+    dyna.train(config.episode_budget, verbose=not quiet)
 
 
 def train_dyna_gym_env(
