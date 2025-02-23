@@ -306,7 +306,7 @@ def train_sac_gym_env(
         if not (question is None or question.lower().strip() in ["", "y", "yes"]):
             print("Abort training")
             return
-            
+
     # train algorithm
     sac.train(config.episode_budget, verbose=not quiet)
 
@@ -344,6 +344,7 @@ def train_dyna_hockey(config: DictConfig, force: bool, device: str, quiet: bool)
     # train algorithm
     dyna.train(config.episode_budget, verbose=not quiet)
 
+
 def train_dyna_hockey(config: DictConfig, force: bool, device: str, quiet: bool):
     config: DynaConfig = DynaConfig.from_dict_config(config)
     opponent = BasicOpponent(weak=True)
@@ -376,7 +377,6 @@ def train_dyna_hockey(config: DictConfig, force: bool, device: str, quiet: bool)
 
     # train algorithm
     dyna.train(config.episode_budget, verbose=not quiet)
-    
 
 
 def train_dyna_gym_env(

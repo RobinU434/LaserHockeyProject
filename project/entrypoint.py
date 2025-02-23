@@ -176,3 +176,18 @@ class Entrypoint:
         train_er_dyna_gym_env(
             config, force, gym_env, max_steps, n_actions, device, quiet
         )
+
+    def upload_dyna(
+        self, checkpoint: str, server_url: str, server_port: int, token: str
+    ):
+        """upload sb3 sac agent to competition server
+
+        Args:
+            checkpoint (str): path to SB3 sac checkpoint
+            server_url (str): URL of the server.
+            server_port (int): Port of the server.
+            token (str): Your access token.
+        """
+        from project.scripts.upload import upload_dyna_agent
+
+        upload_dyna_agent(checkpoint, server_url, server_port, token)

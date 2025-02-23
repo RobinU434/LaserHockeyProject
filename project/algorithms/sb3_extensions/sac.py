@@ -12,7 +12,7 @@ from project.environment.hockey_env.hockey.hockey_env import BasicOpponent
 from project.environment.single_player_env import SinglePlayerHockeyEnv
 
 
-class SB_SAC_Agent(Agent):
+class SBSACCompAgent(Agent):
     def __init__(self, sac: SB_SAC):
         super().__init__()
         self.sac = sac
@@ -23,7 +23,7 @@ class SB_SAC_Agent(Agent):
         )
 
     @classmethod
-    def from_checkpoint(cls, checkpoint: str) -> "SB_SAC_Agent":
+    def from_checkpoint(cls, checkpoint: str) -> "SBSACCompAgent":
         obj = cls(SB_SAC.load(checkpoint))
         return obj
 
@@ -57,10 +57,10 @@ class SAC_Agent(_Agent):
     def __init__(self, sac: SB_SAC):
         super().__init__()
 
-        self.agent = SB_SAC_Agent(sac)
+        self.agent = SBSACCompAgent(sac)
 
     @classmethod
-    def from_checkpoint(cls, checkpoint: str) -> "SB_SAC_Agent":
+    def from_checkpoint(cls, checkpoint: str) -> "SBSACCompAgent":
         obj = cls(SB_SAC.load(checkpoint))
         return obj
 

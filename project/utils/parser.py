@@ -2,6 +2,38 @@ from argparse import ArgumentParser
 from typing import Tuple, Dict, List
 
 
+def add_upload_dyna_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument(
+        "--checkpoint",
+        help="path to SB3 sac checkpoint",
+        dest="checkpoint",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--server-url",
+        help="URL of the server.",
+        dest="server_url",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "--server-port",
+        help="Port of the server.",
+        dest="server_port",
+        type=int,
+        required=True,
+    )
+    parser.add_argument(
+        "--token",
+        help="Your access token.",
+        dest="token",
+        type=str,
+        required=True,
+    )
+    return parser
+
+
 def add_train_er_dyna_gym_args(parser: ArgumentParser) -> ArgumentParser:
     parser.add_argument(
         "--gym-env",
@@ -560,6 +592,11 @@ def setup_entrypoint_parser(
     train_er_dyna_gym = add_train_er_dyna_gym_args(train_er_dyna_gym)
     train_er_dyna_gym = add_hydra_parser(train_er_dyna_gym)
     subparser["train_er_dyna_gym"] = train_er_dyna_gym
+    upload_dyna = command_subparser.add_parser(
+        "upload-dyna", help="upload sb3 sac agent to competition server"
+    )
+    upload_dyna = add_upload_dyna_args(upload_dyna)
+    subparser["upload_dyna"] = upload_dyna
     return parser, subparser
 
 

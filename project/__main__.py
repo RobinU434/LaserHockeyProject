@@ -160,6 +160,14 @@ def execute(args: dict) -> bool:
                 config_name="train_er_dyna.yaml",
             )
 
+        case "upload-dyna":
+            module.upload_dyna(
+                checkpoint=args["checkpoint"],
+                server_url=args["server_url"],
+                server_port=args["server_port"],
+                token=args["token"],
+            )
+
         case _:
             return False
 
