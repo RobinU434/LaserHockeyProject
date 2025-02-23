@@ -50,7 +50,7 @@ class _RLAlgorithm(ABC):
 
         self.hparams = Namespace()
         self.episode_offset = 0
-
+        
     def save_hyperparmeters(self, *args):
         # Get the frame of the calling function (i.e., the __init__ method)
         frame = inspect.currentframe().f_back
