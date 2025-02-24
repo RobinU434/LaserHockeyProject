@@ -50,7 +50,7 @@ class _RLAlgorithm(ABC):
 
         self.hparams = Namespace()
         self.episode_offset = 0
-        
+
     def save_hyperparmeters(self, *args):
         # Get the frame of the calling function (i.e., the __init__ method)
         frame = inspect.currentframe().f_back
@@ -174,6 +174,13 @@ class _RLAlgorithm(ABC):
         checkpoint_content = torch.load(checkpoint, weights_only=False)
         if env is None:
             env = build_placeholder_env(checkpoint_content)
+
+        if (
+            "device" in checkpoint_content["hparams"]
+            and "cuda" in checkpoint_content["hparams"]["device"]
+            and not torch.cuda.is_available()
+        ):
+            checkpoint_content["hparams"]["device"] = "cpu"
 
         algorithm: _RLAlgorithm = cls(env=env, **checkpoint_content["hparams"])
         algorithm.load_checkpoint(checkpoint)
