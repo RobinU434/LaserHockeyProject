@@ -171,6 +171,17 @@ def execute(args: dict) -> bool:
                 config_name="train_er_dyna.yaml",
             )
 
+        case "train-er-dyna-hockey":
+            api.hydra_plugin.hydra_wrapper(
+                module.train_er_dyna_hockey,
+                args,
+                command_parser["train_er_dyna_hockey"],
+                config_var_name="config",
+                version_base=None,
+                config_path=str(Path.cwd().joinpath("config")),
+                config_name="train_er_dyna.yaml",
+            )
+
         case "upload-dyna":
             module.upload_dyna(
                 checkpoint=args["checkpoint"],

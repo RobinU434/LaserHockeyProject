@@ -64,6 +64,7 @@ class ERDynaQ(DynaQ):
 
     def get_action(self, state, episode_idx):
         with torch.no_grad():
+            state = state.to(self._device).float()
             q_val = self.q_net.complete_forward(state)
 
         action_log_probs = F.log_softmax(torch.exp(self.log_alpha) * q_val, dim=-1)
@@ -83,8 +84,8 @@ class ERDynaQ(DynaQ):
         # optimize alpha
         alpha = torch.exp(self.log_alpha)
         state = mini_batch[0]
-        state = state.to(self._device)
-
+        state = state.to(self._device).float()
+        
         q_val = self.q_net.complete_forward(state)
         action_prob = F.softmax(alpha * q_val, dim=-1)
         action_prob = action_prob + 1e-18  # avoid 0

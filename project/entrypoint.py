@@ -185,6 +185,18 @@ class Entrypoint:
             config, force, gym_env, max_steps, n_actions, device, quiet
         )
 
+    @add_hydra("config", None, config_path="config", config_name="train_er_dyna.yaml")
+    def train_er_dyna_hockey(
+        self,
+        config: DictConfig,
+        force: bool = False,
+        quiet: bool = False,
+        device: str = "cpu",
+    ):
+        from project.scripts.train import train_er_dyna_hockey
+
+        train_er_dyna_hockey(config, force, device, quiet)
+
     def upload_dyna(
         self, checkpoint: str, server_url: str, server_port: int, token: str
     ):

@@ -34,6 +34,32 @@ def add_upload_dyna_args(parser: ArgumentParser) -> ArgumentParser:
     return parser
 
 
+def add_train_er_dyna_hockey_args(parser: ArgumentParser) -> ArgumentParser:
+    parser.add_argument(
+        "--force",
+        help="--no-documentation-exists--",
+        dest="force",
+        action="store_true",
+        required=False,
+    )
+    parser.add_argument(
+        "--quiet",
+        help="--no-documentation-exists--",
+        dest="quiet",
+        action="store_true",
+        required=False,
+    )
+    parser.add_argument(
+        "--device",
+        help="--no-documentation-exists--",
+        dest="device",
+        type=str,
+        default="cpu",
+        required=False,
+    )
+    return parser
+
+
 def add_train_er_dyna_gym_args(parser: ArgumentParser) -> ArgumentParser:
     parser.add_argument(
         "--gym-env",
@@ -624,6 +650,12 @@ def setup_entrypoint_parser(
     train_er_dyna_gym = add_train_er_dyna_gym_args(train_er_dyna_gym)
     train_er_dyna_gym = add_hydra_parser(train_er_dyna_gym)
     subparser["train_er_dyna_gym"] = train_er_dyna_gym
+    train_er_dyna_hockey = command_subparser.add_parser(
+        "train-er-dyna-hockey", help="--no-documentation-exists--"
+    )
+    train_er_dyna_hockey = add_train_er_dyna_hockey_args(train_er_dyna_hockey)
+    train_er_dyna_hockey = add_hydra_parser(train_er_dyna_hockey)
+    subparser["train_er_dyna_hockey"] = train_er_dyna_hockey
     upload_dyna = command_subparser.add_parser(
         "upload-dyna", help="upload sb3 sac agent to competition server"
     )
