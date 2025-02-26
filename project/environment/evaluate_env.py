@@ -105,6 +105,7 @@ class EvalHockeySuite(_EvalEnv):
         self.weak_env = SinglePlayerHockeyEnv(
             opponent=weak_opponent, keep_mode=keep_mode, mode=mode, verbose=verbose
         )
+        self.results_df = {}
 
     def eval_agent(self, player: _Agent, verbose: bool = False) -> Dict[str, float]:
         """evaluate player on the weak and strong opponent
@@ -126,6 +127,7 @@ class EvalHockeySuite(_EvalEnv):
                 - eval_weak/mean_score
                 - eval_weak/mean_length
         """
+        self.results_df = {}
         strong_results = self._eval_on_opponent(
             player, self.strong_env, prefix="eval_strong/", verbose=verbose
         )
@@ -164,6 +166,7 @@ class EvalHockeySuite(_EvalEnv):
 
         # aggregate results
         results = pd.DataFrame(results)
+        self.results_df[prefix] = results
         mean_results = results.mean()
         mean_results = mean_results.to_dict()
         # add prefix
